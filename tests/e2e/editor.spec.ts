@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 const markdown =
   '# 한글 제목\n\nHello **world**.\n\n- [ ] parent\n  - [x] child\n\n| Name | Value |\n| --- | --- |\n| HP | 100 |\n\n![Tracker](https://example.com/tracker.png)\n';
 async function launch(page: Page, text = markdown, name = 'note.md') {
@@ -57,6 +58,89 @@ async function launch(page: Page, text = markdown, name = 'note.md') {
   );
   await page.goto('/');
 }
+test('QA.md Rich single-space save preserves every unrelated source byte, including after undo and Raw sync', async ({
+  page,
+}) => {
+  const source = readFileSync('tests/fixtures/markdown/qa-source.md', 'utf8').replace(
+    /\r\n/g,
+    '\n',
+  );
+  const needle = '아래 PASS는 명시한 범위에만 적용한다.';
+  await launch(page, source, 'QA.md');
+  const paragraph = page.locator('.ProseMirror > p').first();
+  await paragraph.click();
+  await paragraph.evaluate((el) => {
+    const selection = window.getSelection()!;
+    selection.selectAllChildren(el);
+    selection.collapseToEnd();
+  });
+  await page.keyboard.type(' ');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
+    source.replace(needle, needle + ' '),
+  );
+  await page.keyboard.press('ControlOrMeta+z');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(source);
+  await page.getByRole('button', { name: 'Raw', exact: true }).click();
+  await page.locator('.cm-content:visible').click();
+  await page.keyboard.press('ControlOrMeta+Home');
+  await page.keyboard.press('End');
+  await page.keyboard.type(' raw');
+  await page.getByRole('button', { name: 'Rich', exact: true }).click();
+  await paragraph.click();
+  await paragraph.evaluate((el) => {
+    const selection = window.getSelection()!;
+    selection.selectAllChildren(el);
+    selection.collapseToEnd();
+  });
+  await page.keyboard.type(' ');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
+    source.replace('기록\n', '기록 raw\n').replace(needle, needle + ' '),
+  );
+});
+test('HTML source next to edited text is preserved', async ({ page }) => {
+  const source = '<br />\n\nparagraph\n';
+  await launch(page, source);
+  await page.locator('.ProseMirror').click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type(' edit');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
+    source.replace('paragraph', 'paragraph edit'),
+  );
+});
+test('a source preservation error blocks saving while keeping Raw recovery editable', async ({
+  page,
+}) => {
+  await launch(page, '<br />\n\nparagraph\n');
+  const rich = page.locator('.ProseMirror');
+  await rich.click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type(' edit');
+  // Fault injection for the save guard; the HTML fixture itself is supported.
+  await page.evaluate(async () => {
+    const modulePath = '/src/tabs/tabStore.ts';
+    const { tabs } = await import(modulePath);
+    tabs.patch(tabs.get().active!, {
+      richError: '원문 보존 실패: Raw에서 편집 내용을 확인해 주세요.',
+      dirty: true,
+    });
+  });
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Raw');
+  expect(await page.evaluate(() => (window as any).__testSaved.length)).toBe(0);
+  await page.getByRole('button', { name: 'Raw', exact: true }).click();
+  await expect(page.locator('.cm-content')).toContainText('paragraph edit');
+  await page.locator('.cm-content').click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type(' reviewed');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toContain(
+    'paragraph edit',
+  );
+});
 test('rich editing, nested checkbox, table, raw sync and no-op save', async ({ page }) => {
   const external: string[] = [];
   page.on('request', (request) => {

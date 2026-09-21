@@ -14,6 +14,7 @@ export interface EditorTab {
   revision: string | null;
   mode: 'rich' | 'raw';
   conflict: string | null;
+  richError?: string;
   line: number;
   column: number;
 }
@@ -43,7 +44,8 @@ export const tabs = {
   },
   edit(id: string, text: string) {
     const tab = state.tabs.find((t) => t.id === id);
-    if (tab && tab.text !== text) this.patch(id, { text, dirty: text !== tab.savedText });
+    if (tab && tab.text !== text)
+      this.patch(id, { text, dirty: text !== tab.savedText, richError: undefined });
   },
   new(type: FileType = 'text') {
     const id = crypto.randomUUID();
@@ -101,7 +103,14 @@ export const tabs = {
   },
   reload(id: string, doc: DocumentFile) {
     const text = normalize(doc.text);
-    this.patch(id, { ...doc, text, savedText: text, dirty: false, conflict: null });
+    this.patch(id, {
+      ...doc,
+      text,
+      savedText: text,
+      dirty: false,
+      conflict: null,
+      richError: undefined,
+    });
   },
   saved(id: string, doc: DocumentFile, submitted: string) {
     const current = state.tabs.find((t) => t.id === id);

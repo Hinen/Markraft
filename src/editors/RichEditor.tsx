@@ -11,6 +11,7 @@ import { wrapInList } from '@milkdown/kit/prose/schema-list';
 import { addRowAfter, deleteRow, addColumnAfter, deleteColumn } from '@milkdown/kit/prose/tables';
 import { insertTableCommand } from '@milkdown/kit/preset/gfm';
 import { markdownEditor } from './markdownCodec';
+import { preserveMarkdown } from './preserveMarkdown';
 import { richPlugins } from './markdownPlugins';
 import { editorActions } from './editorCommands';
 import { tabs, type EditorTab } from '../tabs/tabStore';
@@ -29,6 +30,7 @@ export function RichEditor({
   current.current = tab;
   const suppress = useRef(false);
   const lastPublished = useRef(tab.text);
+  const preserve = useRef<ReturnType<typeof preserveMarkdown> | null>(null);
   const [ready, setReady] = useState(false);
   const [search, setSearch] = useState<string | null>(null);
   const [count, setCount] = useState('');
@@ -43,22 +45,36 @@ export function RichEditor({
         $prose(
           (ctx) =>
             new Plugin({
-              view: () => ({
-                update(view, previous) {
-                  if (!view.state.doc.eq(previous.doc) && !suppress.current) {
-                    lastPublished.current = ctx.get(serializerCtx)(view.state.doc);
-                    tabs.edit(tab.id, lastPublished.current);
-                  }
-                  if (!view.state.selection.eq(previous.selection)) {
-                    const before = view.state.doc.textBetween(0, view.state.selection.head, '\n');
-                    const lines = before.split('\n');
-                    tabs.patch(tab.id, {
-                      line: lines.length,
-                      column: (lines.at(-1)?.length || 0) + 1,
-                    });
-                  }
-                },
-              }),
+              view: (initialView) => {
+                preserve.current = preserveMarkdown(ctx, tab.text, initialView.state.doc);
+                return {
+                  update(view, previous) {
+                    if (!view.state.doc.eq(previous.doc) && !suppress.current) {
+                      try {
+                        lastPublished.current = preserve.current!(view.state.doc);
+                        tabs.edit(tab.id, lastPublished.current);
+                        if (current.current.richError) tabs.patch(tab.id, { richError: undefined });
+                      } catch (error) {
+                        // Keep the edit recoverable in Raw, but never silently save
+                        // a whole-document normalization when mapping is unavailable.
+                        lastPublished.current = ctx.get(serializerCtx)(view.state.doc);
+                        tabs.edit(tab.id, lastPublished.current);
+                        const message = `${String(error)} 편집 내용은 Raw에 보관했습니다. 확인하고 수정한 뒤 저장해 주세요.`;
+                        tabs.patch(tab.id, { richError: message, dirty: true });
+                        onError(message);
+                      }
+                    }
+                    if (!view.state.selection.eq(previous.selection)) {
+                      const before = view.state.doc.textBetween(0, view.state.selection.head, '\n');
+                      const lines = before.split('\n');
+                      tabs.patch(tab.id, {
+                        line: lines.length,
+                        column: (lines.at(-1)?.length || 0) + 1,
+                      });
+                    }
+                  },
+                };
+              },
             }),
         ),
       );
@@ -182,6 +198,7 @@ export function RichEditor({
         view.dispatch(view.state.tr.replaceWith(0, view.state.doc.content.size, next.content));
         suppress.current = false;
       }
+      preserve.current = preserveMarkdown(ctx, tab.text, view.state.doc);
     });
   }, [tab.text, ready, visible]);
   useEffect(() => {

@@ -91,6 +91,7 @@ export function App() {
   async function save(id: string, saveAs = false): Promise<boolean> {
     let tab = tabs.get().tabs.find((t) => t.id === id);
     if (!tab) return false;
+    if (tab.richError) throw new Error(tab.richError);
     if (!saveAs && tab.path) {
       const revision = await files.check(tab.path);
       if (revision !== tab.revision) {
