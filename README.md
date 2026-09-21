@@ -2,7 +2,7 @@
 
 로컬 파일을 위한 Tauri 2 텍스트·Markdown 데스크톱 에디터입니다. Windows 10/11 x64를 주 대상으로 구현하며, macOS에서도 빌드할 수 있습니다.
 
-> **상태: 기능 구현 및 macOS 검증 빌드. Windows 출시 검증은 미완료입니다.** Windows 설치/파일 연결/실제 Korean IME 검증과 간접 MPL 의존성 정책 충돌이 남아 있습니다. 명세의 전체 Definition of Done을 완료했다고 주장하지 않습니다. 자세한 결과는 [QA.md](QA.md)에 있습니다.
+> **상태: Windows 11 x64 설치 빌드 및 실제 파일 검증 완료, 출시 검증은 미완료입니다.** NSIS 설치와 WebView2의 편집·인코딩·충돌·읽기 전용/잠금 보호를 확인했습니다. 실제 Korean IME, Explorer 조작 등 남은 수동 항목과 MPL 의존성 정책 충돌 때문에 전체 Definition of Done은 미완료입니다. 자세한 결과는 [QA.md](QA.md)에 있습니다.
 
 ## 편집
 
@@ -59,6 +59,8 @@ npm run tauri build -- --bundles app
 
 [Windows CI](.github/workflows/windows.yml)는 테스트와 NSIS 빌드를 실행하고 `Markraft-windows-x64` artifact를 보관합니다. 워크플로 파일은 추가했으나 현재 작업에서는 원격 push/CI 실행을 하지 않았습니다. 설치 프로그램은 코드 서명하지 않았습니다. Windows 파일 연결은 등록되며, 기본 앱 선택은 사용자가 Windows 설정에서 합니다.
 
+Windows 설치 프로그램은 `Markraft.Document` 연결 식별자로 6개 확장자를 등록하며, 공백이 있는 설치 경로와 Windows 기본 앱 후보 등록을 처리합니다. 설치 후 등록 및 포함 파일을 확인하려면 PowerShell에서 `./scripts/verify-windows-install.ps1 -InstallDirectory "$env:LOCALAPPDATA\Markraft"`를 실행합니다. 사용자 지정 경로에 설치했다면 실제 경로를 전달하세요. 이 검사는 Explorer 더블클릭이나 IME 수동 검증을 대체하지 않습니다.
+
 ## 테스트
 
 ```sh
@@ -97,3 +99,5 @@ macOS에서는 Ctrl 대신 Command도 사용할 수 있습니다.
 `src/editors/`는 편집기, `src/tabs/`는 문서 상태, `src/files/`는 Rust 브리지, `src/settings/`는 로컬 설정입니다. `src-tauri/src/`는 파일 접근·인코딩·원자적 저장·OS 통합을 담당합니다.
 
 직접 사용하는 React, CodeMirror, Milkdown은 MIT, Tauri는 MIT/Apache-2.0이며 기존 에디터 앱의 소스를 복사하지 않았습니다. 다만 **Tauri 간접 의존성에 MPL-2.0이 있어 명세의 copyleft 금지 조항과 충돌합니다.** 이를 숨기거나 모두 permissive라고 표시하지 않습니다. 전체 버전·라이선스 목록은 [DEPENDENCIES.md](DEPENDENCIES.md), 상위 프로젝트의 고지 원문은 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt)에 있습니다. 배포 전에 이 정책 충돌을 해결해야 합니다.
+
+Windows 런타임/빌드 도구별 경로, 교체 대안과 필요한 정책 결정은 [LICENSE_REVIEW.md](LICENSE_REVIEW.md)에 기록했습니다. `npm run licenses`는 Windows에서 `HOME` 없이 실행할 수 있고, `CARGO` 또는 `CARGO_HOME` 경로도 지원합니다.

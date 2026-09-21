@@ -51,6 +51,7 @@
     "resources": {
       "../THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt",
       "../DEPENDENCIES.md": "DEPENDENCIES.md",
+      "../LICENSE_REVIEW.md": "LICENSE_REVIEW.md",
       "../README.md": "README.md"
     }
   }
