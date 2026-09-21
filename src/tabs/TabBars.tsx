@@ -292,7 +292,9 @@ export function TabBars({
                         ? '‹/›'
                         : tab.fileType === 'yaml'
                           ? 'Y'
-                          : 'T'}
+                          : tab.fileType === 'json'
+                            ? '{}'
+                            : 'T'}
                   </span>
                   <span className="tab-name">{tab.name}</span>
                   {tab.dirty && (

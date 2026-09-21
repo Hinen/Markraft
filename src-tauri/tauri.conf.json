@@ -30,7 +30,7 @@
     "shortDescription": "Local text and rich Markdown editor",
     "fileAssociations": [
       {
-        "ext": ["md", "markdown", "txt", "yaml", "yml", "xml"],
+        "ext": ["md", "markdown", "txt", "json", "yaml", "yml", "xml"],
         "name": "Markraft.Document",
         "role": "Editor"
       }

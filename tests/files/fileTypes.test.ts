@@ -10,6 +10,8 @@ describe('file types and preservation', () => {
     ['a.yaml', 'yaml'],
     ['a.yml', 'yaml'],
     ['a.xml', 'xml'],
+    ['items.json', 'json'],
+    ['ITEMS.JSON', 'json'],
     ['README', 'text'],
   ])('%s → %s', (name, type) => expect(fileType(name)).toBe(type));
   it('detects CRLF without losing final newline or whitespace', () => {

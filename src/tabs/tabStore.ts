@@ -168,7 +168,7 @@ export const tabs = {
   new(type: FileType = 'text') {
     const id = crypto.randomUUID();
     const pane = state.activePane;
-    const ext = type === 'markdown' ? 'md' : 'txt';
+    const ext = type === 'markdown' ? 'md' : type === 'text' ? 'txt' : type;
     let number = 1,
       name = `Untitled.${ext}`;
     while (state.tabs.some((t) => t.name === name)) name = `Untitled ${++number}.${ext}`;

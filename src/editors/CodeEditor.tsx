@@ -7,6 +7,9 @@ import { openSearchPanel, gotoLine } from '@codemirror/search';
 import { markdown } from '@codemirror/lang-markdown';
 import { yaml } from '@codemirror/lang-yaml';
 import { xml } from '@codemirror/lang-xml';
+import { json, jsonParseLinter } from '@codemirror/lang-json';
+import { linter, lintGutter } from '@codemirror/lint';
+import { syntaxTheme } from './syntaxTheme';
 import type { EditorTab } from '../tabs/tabStore';
 import { tabs } from '../tabs/tabStore';
 import type { Settings } from '../settings/settingsStore';
@@ -35,7 +38,9 @@ export function CodeEditor({
         ? yaml()
         : tab.fileType === 'xml'
           ? xml()
-          : [];
+          : tab.fileType === 'json'
+            ? [json(), linter(jsonParseLinter()), lintGutter()]
+            : [];
   const themeExtension = () =>
     EditorView.theme(
       {
@@ -54,6 +59,11 @@ export function CodeEditor({
           backgroundColor: 'var(--selection)',
         },
         '.cm-panels': { backgroundColor: 'var(--panel)', color: 'var(--text)' },
+        '.cm-tooltip': {
+          backgroundColor: 'var(--panel)',
+          color: 'var(--text)',
+          border: '1px solid var(--line)',
+        },
       },
       { dark: document.documentElement.dataset.theme === 'dark' },
     );
@@ -64,6 +74,7 @@ export function CodeEditor({
         doc: tab.text,
         extensions: [
           basicSetup,
+          syntaxTheme,
           keymap.of([indentWithTab]),
           wrap.current.of(settings.wordWrap ? EditorView.lineWrapping : []),
           theme.current.of(themeExtension()),
@@ -112,6 +123,16 @@ export function CodeEditor({
       ],
     });
   }, [settings, tab.fileType]);
+  useEffect(() => {
+    const updateTheme = () =>
+      view.current?.dispatch({ effects: theme.current.reconfigure(themeExtension()) });
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+    return () => observer.disconnect();
+  }, [settings]);
   useEffect(() => {
     if (visible) {
       view.current?.requestMeasure();

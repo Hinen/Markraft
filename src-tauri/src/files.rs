@@ -80,7 +80,7 @@ pub async fn open_dialog(state: tauri::State<'_, FileState>) -> Result<Vec<Docum
     let Some(files) = rfd::AsyncFileDialog::new()
         .add_filter(
             "Text documents",
-            &["md", "markdown", "txt", "yaml", "yml", "xml"],
+            &["md", "markdown", "txt", "json", "yaml", "yml", "xml"],
         )
         .add_filter("Open as Plain Text", &["*"])
         .pick_files()

@@ -796,6 +796,98 @@ test('external changes reload clean tabs and protect local changes', async ({ pa
     'external local',
   );
 });
+test('JSON opens, folds, reports syntax errors and saves without rewriting numeric values', async ({
+  page,
+}) => {
+  const source =
+    '{\n  "name": "사과",\n  "id": 9007199254740993,\n  "cost": 1e+03,\n  "enabled": true\n}\n';
+  await launch(page, source, 'items.JSON');
+  await expect(page.getByLabel('json source editor')).toBeVisible();
+  await expect(page.locator('.statusbar')).toContainText('JSON');
+  await page.getByTitle('Fold line', { exact: true }).first().click();
+  await expect(page.locator('.cm-foldPlaceholder')).toBeVisible();
+  await page.locator('.cm-foldPlaceholder').click();
+  const editor = page.locator('.cm-content');
+  await editor.click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type('!');
+  await expect(page.locator('.cm-lint-marker-error')).toBeVisible();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.locator('.cm-lintPoint-error')).toHaveCount(0);
+  await expect(page.locator('.cm-lint-marker-error')).toHaveCount(0);
+  await page.keyboard.press('ControlOrMeta+s');
+  await expect(page.getByText('변경 사항이 없습니다. 파일을 다시 쓰지 않았습니다.')).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__testSaved.length)).toBe(0);
+  await editor.click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type(' ');
+  await page.keyboard.press('ControlOrMeta+s');
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__testSaved.at(-1)?.text))
+    .toBe(source + ' ');
+  await page.getByRole('button', { name: 'File', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'New JSON', exact: true }).click();
+  await expect(page.locator('.document-name')).toHaveText('Untitled.json');
+  await expect(page.getByLabel('json source editor').last()).toBeVisible();
+});
+
+for (const [name, source] of [
+  ['items.yaml', '# comment\n- id: 1\n  name: "사과"\n  enabled: true\n  nothing: null\n'],
+  ['items.json', '{"name": "사과", "id": 30, "enabled": true, "nothing": null}\n'],
+  ['items.xml', '<!-- comment -->\n<item id="30">사과</item>\n'],
+  ['items.md', '# Heading\n\n**Strong** and [link](https://example.com)\n\n`code`\n'],
+]) {
+  test(`syntax contrast follows system theme without editing or remounting: ${name}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await launch(page, source, name);
+    if (name.endsWith('.md')) await page.getByRole('button', { name: 'Raw', exact: true }).click();
+    await page.locator('.cm-content').evaluate((el) => (el.dataset.instance = 'preserved'));
+    const palettes: string[][] = [];
+    for (const theme of ['dark', 'light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+      const result = await page.locator('.cm-editor').evaluate((el) => {
+        const colors = [
+          ...new Set(
+            Array.from(el.querySelectorAll('.cm-line span')).map(
+              (span) => getComputedStyle(span).color,
+            ),
+          ),
+        ];
+        const backgrounds = [
+          getComputedStyle(el).backgroundColor,
+          getComputedStyle(el.querySelector('.cm-activeLine')!).backgroundColor,
+        ];
+        const luminance = (color: string) =>
+          color
+            .match(/[\d.]+/g)!
+            .slice(0, 3)
+            .map(Number)
+            .map((v) => v / 255)
+            .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+            .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+        const contrast = colors.flatMap((color) =>
+          backgrounds.map((background) => {
+            const a = luminance(color),
+              b = luminance(background);
+            return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+          }),
+        );
+        return { colors, contrast };
+      });
+      expect(result.colors.length).toBeGreaterThan(1);
+      expect(Math.min(...result.contrast)).toBeGreaterThanOrEqual(4.5);
+      palettes.push(result.colors);
+      await expect(page.locator('.cm-content')).toHaveAttribute('data-instance', 'preserved');
+      await expect(page.getByLabel('Unsaved changes')).toHaveCount(0);
+    }
+    expect(palettes[0]).not.toEqual(palettes[1]);
+    expect(palettes[0]).toEqual(palettes[2]);
+  });
+}
+
 test('XML syntax and find/replace panel', async ({ page }) => {
   await launch(page, '<root><name>한글</name></root>', 'data.xml');
   await expect(page.locator('.cm-content')).toContainText('<root>');

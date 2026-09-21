@@ -1,4 +1,4 @@
-export type FileType = 'markdown' | 'text' | 'yaml' | 'xml';
+export type FileType = 'markdown' | 'text' | 'yaml' | 'xml' | 'json';
 export function fileType(name: string): FileType {
   const ext = name.split('.').pop()?.toLowerCase();
   return ext === 'md' || ext === 'markdown'
@@ -7,7 +7,9 @@ export function fileType(name: string): FileType {
       ? 'yaml'
       : ext === 'xml'
         ? 'xml'
-        : 'text';
+        : ext === 'json'
+          ? 'json'
+          : 'text';
 }
 export function normalize(text: string) {
   return text.replace(/\r\n/g, '\n');

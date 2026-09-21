@@ -19,6 +19,7 @@ The required Tauri 2 stack pulls in MPL-2.0 dependencies (including option-ext, 
 | @codemirror/lang-css | 6.3.1 | MIT |
 | @codemirror/lang-html | 6.4.12 | MIT |
 | @codemirror/lang-javascript | 6.2.5 | MIT |
+| @codemirror/lang-json | 6.0.2 | MIT |
 | @codemirror/lang-markdown | 6.5.2 | MIT |
 | @codemirror/lang-xml | 6.1.0 | MIT |
 | @codemirror/lang-yaml | 6.1.3 | MIT |
@@ -36,6 +37,7 @@ The required Tauri 2 stack pulls in MPL-2.0 dependencies (including option-ext, 
 | @lezer/highlight | 1.2.3 | MIT |
 | @lezer/html | 1.3.13 | MIT |
 | @lezer/javascript | 1.5.5 | MIT |
+| @lezer/json | 1.0.3 | MIT |
 | @lezer/lr | 1.4.10 | MIT |
 | @lezer/markdown | 1.7.2 | MIT |
 | @lezer/xml | 1.0.6 | MIT |

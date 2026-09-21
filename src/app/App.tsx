@@ -422,6 +422,7 @@ export function App() {
   const fileMenu: MenuItem[] = [
     ['New text', 'Ctrl+N', () => tabs.new()],
     ['New Markdown', 'Ctrl+Shift+N', () => tabs.new('markdown')],
+    ['New JSON', '', () => tabs.new('json')],
     ['Open…', 'Ctrl+O', () => void guarded(open)],
     ['Save', 'Ctrl+S', () => active && requestSave(active.id), !active],
     ['Save As…', 'Ctrl+Shift+S', () => active && requestSave(active.id, true), !active],
@@ -755,7 +756,7 @@ export function App() {
             <button onClick={() => tabs.new('markdown')}>New Markdown</button>
           </div>
           <p className="file-types">
-            MD · TXT · YAML · XML <span>파일을 여기로 끌어 놓으세요</span>
+            MD · TXT · JSON · YAML · XML <span>파일을 여기로 끌어 놓으세요</span>
           </p>
         </div>
       )}
