@@ -51,9 +51,18 @@ Menus, dialogs, search controls, tooltips, and application messages change witho
 
 ## Get started
 
-On Windows, use the NSIS installer produced by the [Windows build workflow](.github/workflows/windows.yml). Successful workflow runs publish the installer in the **Markraft-windows-x64** artifact. Install it, open a file with **Ctrl+O**, or drop files into the window.
+Download **[Markraft 0.0.1](https://github.com/Hinen/Markraft/releases/tag/v0.0.1)**:
+
+| Platform | Download |
+| :--- | :--- |
+| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.1/Markraft_0.0.1_windows_x64_setup.exe) |
+| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.1/Markraft_0.0.1_macos_universal.dmg) |
+
+Run the Windows installer, or open the DMG and drag Markraft to Applications. Then open a file with **Ctrl+O**, or drop files into the window. The Windows installer is unsigned; the macOS application is ad-hoc signed and not notarized, so the OS may request approval when opening it.
 
 Markraft registers as an **Open with** option for its supported extensions. Choose your default editor in Windows Settings if you want files to open in Markraft automatically.
+
+Release installers are built by the [release workflow](.github/workflows/release.yml). Checksums are attached to the release.
 
 To run from source, see [Development](#development).
 
