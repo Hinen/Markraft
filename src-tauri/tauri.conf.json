@@ -31,13 +31,14 @@
     "fileAssociations": [
       {
         "ext": ["md", "markdown", "txt", "yaml", "yml", "xml"],
-        "name": "Text document",
+        "name": "Markraft.Document",
         "role": "Editor"
       }
     ],
     "windows": {
       "nsis": {
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installerHooks": "windows/hooks.nsh"
       }
     },
     "icon": [

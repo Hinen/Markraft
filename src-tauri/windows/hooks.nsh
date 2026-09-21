@@ -1,0 +1,39 @@
+; Use an application-specific ProgID and quote both paths for installations
+; beneath user names / directories containing spaces. Keep default-app choice
+; with Windows; OpenWithProgids and Capabilities make Markraft discoverable.
+!macro MARKRAFT_REGISTER_EXTENSION EXT
+  WriteRegStr SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "Markraft.Document" ""
+  WriteRegStr SHELL_CONTEXT "Software\Markraft\Capabilities\FileAssociations" ".${EXT}" "Markraft.Document"
+!macroend
+
+!macro NSIS_HOOK_POSTINSTALL
+  WriteRegStr SHELL_CONTEXT "Software\Classes\Markraft.Document" "" "Markraft text document"
+  WriteRegStr SHELL_CONTEXT "Software\Classes\Markraft.Document\shell\open\command" "" '$\"$INSTDIR\${MAINBINARYNAME}.exe$\" $\"%1$\"'
+  WriteRegStr SHELL_CONTEXT "Software\Classes\Markraft.Document\DefaultIcon" "" '$\"$INSTDIR\${MAINBINARYNAME}.exe$\",0'
+  WriteRegStr SHELL_CONTEXT "Software\Markraft\Capabilities" "ApplicationName" "Markraft"
+  WriteRegStr SHELL_CONTEXT "Software\Markraft\Capabilities" "ApplicationDescription" "Local text and Markdown editor"
+  WriteRegStr SHELL_CONTEXT "Software\RegisteredApplications" "Markraft" "Software\Markraft\Capabilities"
+  !insertmacro MARKRAFT_REGISTER_EXTENSION "md"
+  !insertmacro MARKRAFT_REGISTER_EXTENSION "markdown"
+  !insertmacro MARKRAFT_REGISTER_EXTENSION "txt"
+  !insertmacro MARKRAFT_REGISTER_EXTENSION "yaml"
+  !insertmacro MARKRAFT_REGISTER_EXTENSION "yml"
+  !insertmacro MARKRAFT_REGISTER_EXTENSION "xml"
+!macroend
+
+!macro MARKRAFT_UNREGISTER_EXTENSION EXT
+  DeleteRegValue SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids" "Markraft.Document"
+  DeleteRegKey /ifempty SHELL_CONTEXT "Software\Classes\.${EXT}\OpenWithProgids"
+!macroend
+
+!macro NSIS_HOOK_POSTUNINSTALL
+  DeleteRegValue SHELL_CONTEXT "Software\RegisteredApplications" "Markraft"
+  DeleteRegKey SHELL_CONTEXT "Software\Markraft\Capabilities"
+  DeleteRegKey /ifempty SHELL_CONTEXT "Software\Markraft"
+  !insertmacro MARKRAFT_UNREGISTER_EXTENSION "md"
+  !insertmacro MARKRAFT_UNREGISTER_EXTENSION "markdown"
+  !insertmacro MARKRAFT_UNREGISTER_EXTENSION "txt"
+  !insertmacro MARKRAFT_UNREGISTER_EXTENSION "yaml"
+  !insertmacro MARKRAFT_UNREGISTER_EXTENSION "yml"
+  !insertmacro MARKRAFT_UNREGISTER_EXTENSION "xml"
+!macroend
