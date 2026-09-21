@@ -10,6 +10,9 @@
   --line: #e5e8ed;
   --hover: #edf0f5;
   --selection: #c9ddfa;
+  --selection-inactive: #dce3ed;
+  --selection-match: #eef3fd;
+  --selection-match-border: #b6c8e5;
   --accent: #4468bd;
   --accent-soft: #eaf0fd;
   --editor-size: 15px;
@@ -36,6 +39,9 @@
   --line: #363636;
   --hover: #2c2c2c;
   --selection: #354e78;
+  --selection-inactive: #303a4a;
+  --selection-match: #263244;
+  --selection-match-border: #4f6687;
   --accent: #91b2ff;
   --accent-soft: #29354e;
   --syntax-property: #9cdcfe;

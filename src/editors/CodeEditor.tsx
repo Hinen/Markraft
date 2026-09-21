@@ -81,9 +81,17 @@ export function CodeEditor({
         '.cm-content': { padding: '24px 0' },
         '.cm-gutters': { backgroundColor: 'var(--surface)', color: 'var(--muted)', border: 'none' },
         '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'var(--hover)' },
+        // The drawn selection is behind the content. An opaque current-line
+        // fill must not cover the selected text on the selection's head line.
+        '&.cm-hasSelection .cm-activeLine': { backgroundColor: 'transparent' },
         '.cm-cursor': { borderLeftColor: 'var(--text)' },
-        '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': {
+        '.cm-selectionBackground': { backgroundColor: 'var(--selection-inactive)' },
+        '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': {
           backgroundColor: 'var(--selection)',
+        },
+        '.cm-selectionMatch': {
+          backgroundColor: 'var(--selection-match)',
+          boxShadow: 'inset 0 0 0 1px var(--selection-match-border)',
         },
         '.cm-panels': { backgroundColor: 'var(--panel)', color: 'var(--text)' },
         '.cm-tooltip': {
@@ -102,6 +110,11 @@ export function CodeEditor({
         extensions: [
           basicSetup,
           syntaxTheme,
+          EditorView.editorAttributes.of((view) => ({
+            class: view.state.selection.ranges.some((range) => !range.empty)
+              ? 'cm-hasSelection'
+              : '',
+          })),
           phrases.current.of(EditorState.phrases.of(editorPhrases())),
           keymap.of([indentWithTab]),
           wrap.current.of(settings.wordWrap ? EditorView.lineWrapping : []),

@@ -71,6 +71,66 @@ async function dragTab(page: Page, source: Locator, target: Locator, after = fal
   await page.mouse.move(to.x + (after ? to.width - 4 : 4), to.y + to.height / 2, { steps: 12 });
   await page.mouse.up();
 }
+for (const theme of ['dark', 'light'] as const) {
+  test(`text drag shows the real selection on the active line and preserves its bounds: ${theme}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: theme });
+    const source = 'tets\n\n\ntest\n\n\ntest';
+    await launch(page, source, 'drag.txt');
+    const lines = page.locator('.cm-line');
+    const point = async (line: number, offset: number) =>
+      lines.nth(line).evaluate((el, offset) => {
+        const range = document.createRange();
+        range.setStart(el.firstChild!, offset);
+        range.collapse(true);
+        const rect = range.getBoundingClientRect();
+        return { x: rect.x, y: rect.y + rect.height / 2 };
+      }, offset);
+    const from = await point(6, 4),
+      to = await point(6, 1);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(() => page.evaluate(() => getSelection()?.toString())).toBe('est');
+    await expect(page.locator('.cm-selectionBackground')).toHaveCount(1);
+    await page.screenshot({ path: `test-results/text-drag-${theme}.png` });
+    // An opaque active-line background paints over CodeMirror's selection layer.
+    await expect(page.locator('.cm-activeLine')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    const selection = page.locator('.cm-selectionBackground');
+    const expectedColor = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.backgroundColor = 'var(--selection)';
+      document.body.append(probe);
+      const color = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return color;
+    });
+    await expect(selection).toHaveCSS('background-color', expectedColor);
+    await expect(page.locator('.cm-selectionMatch')).not.toHaveCSS('box-shadow', 'none');
+    await page.keyboard.type('X');
+    await expect(lines.nth(6)).toHaveText('tX');
+    await expect(lines.nth(3)).toHaveText('test');
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(lines.nth(6)).toHaveText('test');
+    // Re-select across empty lines in the other direction.
+    await page.keyboard.press('ArrowLeft');
+    const start = await point(3, 1),
+      end = await point(6, 3);
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(end.x, end.y, { steps: 12 });
+    await page.mouse.up();
+    await expect.poll(() => page.evaluate(() => getSelection()?.toString())).toBe('est\n\n\ntes');
+    await page.keyboard.type('Y');
+    await expect(page.locator('.cm-content')).toHaveText('tetstYt');
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(lines).toHaveCount(7);
+    await expect(page.getByLabel('Unsaved changes')).toHaveCount(0);
+  });
+}
+
 for (const [system, language, fileLabel, findLabel, saveLabel, discardLabel, cancelLabel] of [
   ['en-US', 'en', 'File', 'Find', 'Save', 'Discard', 'Cancel'],
   ['ko-KR', 'ko', '파일', '찾기', '저장', '저장 안 함', '취소'],
