@@ -53,7 +53,9 @@
       "../DEPENDENCIES.md": "DEPENDENCIES.md",
       "../LICENSE_REVIEW.md": "LICENSE_REVIEW.md",
       "../QA_REGRESSIONS.md": "QA_REGRESSIONS.md",
-      "../README.md": "README.md"
+      "../README.md": "README.md",
+      "../assets/icon.svg": "assets/icon.svg",
+      "../assets/screenshots/workspace.png": "assets/screenshots/workspace.png"
     }
   }
 }
