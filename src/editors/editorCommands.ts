@@ -33,5 +33,14 @@ export function focusEditor(id = tabs.get().active) {
       editorActions.get(`${id}:${tab.fileType === 'markdown' ? tab.mode : 'raw'}`)?.('focus');
   };
   focus();
-  requestAnimationFrame(focus);
+  const previous = document.activeElement;
+  requestAnimationFrame(() => {
+    // Retry for a newly mounted editor, but respect focus moved by the user
+    // since the request (for example, to a tab for keyboard reordering).
+    if (
+      document.activeElement === previous ||
+      (document.activeElement === document.body && !previous?.isConnected)
+    )
+      focus();
+  });
 }
