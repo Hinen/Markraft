@@ -57,7 +57,7 @@ button:hover {
 }
 button:disabled {
   opacity: 0.45;
-  cursor: wait;
+  cursor: default;
 }
 button:focus-visible,
 input:focus-visible,
@@ -161,6 +161,7 @@ kbd {
   background: var(--panel);
   border-bottom: 1px solid var(--line);
   padding: 0 8px;
+  scrollbar-width: thin;
 }
 .tabbars {
   display: grid;
@@ -183,6 +184,15 @@ kbd {
 .tab > button:first-child {
   touch-action: none;
   user-select: none;
+}
+.tab-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab .file-icon,
+.tab .dirty {
+  flex-shrink: 0;
 }
 .tab.dragging {
   opacity: 0.45;
@@ -264,24 +274,6 @@ kbd {
   background: var(--accent);
   outline: none;
 }
-.empty-pane {
-  grid-row: 1;
-  min-width: 0;
-  padding: 24px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.8;
-}
-.empty-pane button {
-  border: 1px solid var(--line);
-  color: var(--text);
-}
 .tab {
   display: flex;
   align-items: center;
@@ -331,12 +323,18 @@ kbd {
   border-bottom: 1px solid var(--line);
   padding: 9px 20px;
   min-height: 53px;
+  height: 53px;
   flex-shrink: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   font-size: 12px;
 }
 .document-name {
   font-weight: 600;
+  width: 160px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mode-switch {
   display: flex;
@@ -344,6 +342,7 @@ kbd {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 6px;
+  flex-shrink: 0;
 }
 .mode-switch button {
   padding: 4px 12px;
@@ -357,7 +356,14 @@ kbd {
   display: flex;
   gap: 1px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.format-tools > * {
+  flex-shrink: 0;
 }
 .format-tools button {
   font-size: 11px;
@@ -373,6 +379,7 @@ kbd {
   margin-left: auto;
   border: 1px solid var(--line);
   padding: 5px 13px;
+  flex-shrink: 0;
 }
 .editor-host,
 .editor-pane {
@@ -549,7 +556,14 @@ kbd {
   font-size: 12px;
 }
 .rich-search input {
-  width: 260px;
+  width: 160px;
+  min-width: 60px;
+  flex: 1;
+}
+.rich-search {
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
 }
 .welcome {
   flex: 1;
@@ -748,10 +762,6 @@ kbd {
   .toolbar {
     gap: 8px;
     padding: 8px 12px;
-  }
-  .format-tools {
-    width: 100%;
-    order: 2;
   }
   .document-name {
     max-width: 140px;

@@ -36,6 +36,22 @@ let state: TabState = {
 };
 const listeners = new Set<() => void>();
 function emit() {
+  // Empty groups never survive a completed operation. Keep editor IDs/history.
+  if (
+    state.split &&
+    (!state.tabs.some((t) => t.pane === 'primary') ||
+      !state.tabs.some((t) => t.pane === 'secondary'))
+  ) {
+    const active = state.tabs.find((t) => t.id === state.active)?.id ?? state.tabs[0]?.id ?? null;
+    state = {
+      ...state,
+      split: false,
+      activePane: 'primary',
+      active,
+      tabs: state.tabs.map((t) => (t.pane === 'primary' ? t : { ...t, pane: 'primary' })),
+      selected: { primary: active, secondary: null },
+    };
+  }
   listeners.forEach((fn) => fn());
 }
 export const tabs = {
@@ -85,7 +101,7 @@ export const tabs = {
     emit();
   },
   splitView() {
-    if (state.split || !state.tabs.length) return;
+    if (state.split || state.tabs.length < 2) return;
     state = { ...state, split: true };
     if (state.active && state.tabs.length > 1) this.move(state.active, 'secondary');
     else emit();
@@ -98,6 +114,7 @@ export const tabs = {
       else this.move(id, pane);
       return;
     }
+    if (state.tabs.length < 2) return;
     const others = state.tabs.filter((t) => t.id !== id);
     const otherPane: Pane = pane === 'primary' ? 'secondary' : 'primary';
     const otherSelected =
@@ -130,6 +147,12 @@ export const tabs = {
     };
     emit();
   },
+  cycle(direction: number) {
+    const group = state.tabs.filter((t) => t.pane === state.activePane);
+    if (!group.length) return;
+    const index = group.findIndex((t) => t.id === state.active);
+    this.select(group[(index + direction + group.length) % group.length].id);
+  },
   patch(id: string, patch: Partial<EditorTab>) {
     state = {
       ...state,
@@ -145,6 +168,10 @@ export const tabs = {
   new(type: FileType = 'text') {
     const id = crypto.randomUUID();
     const pane = state.activePane;
+    const ext = type === 'markdown' ? 'md' : 'txt';
+    let number = 1,
+      name = `Untitled.${ext}`;
+    while (state.tabs.some((t) => t.name === name)) name = `Untitled ${++number}.${ext}`;
     state = {
       ...state,
       tabs: [
@@ -153,7 +180,7 @@ export const tabs = {
           id,
           pane,
           path: null,
-          name: `Untitled.${type === 'markdown' ? 'md' : 'txt'}`,
+          name,
           fileType: type,
           text: '',
           savedText: '',

@@ -53,15 +53,15 @@ it('splits the current tab, moves across panes and merges without closing docume
   expect(tabs.get().tabs.find((t) => t.id === b)?.text).toBe('local');
   valid();
 });
-it('new documents use the focused empty pane; duplicate opens select their existing pane', () => {
+it('new documents use the focused pane; duplicate opens select their existing pane', () => {
   const a = open('a.md');
+  open('second.md');
   tabs.splitView();
   tabs.focusPane('secondary');
-  expect(tabs.get().active).toBeNull();
   const b = open('b.txt');
   expect(tabs.get().tabs.find((t) => t.id === b)?.pane).toBe('secondary');
   open('a.md');
-  expect(tabs.get().tabs).toHaveLength(2);
+  expect(tabs.get().tabs).toHaveLength(3);
   expect(tabs.get().active).toBe(a);
   expect(tabs.get().activePane).toBe('primary');
   valid();
@@ -112,14 +112,52 @@ it.each(['primary', 'secondary'] as const)(
     valid();
   },
 );
-it('single-tab drag split keeps one document; an existing pane drop does not create a third pane', () => {
+it('single-tab split is a no-op and moving the last document out of a pane merges it', () => {
   const a = open('a.md');
   tabs.splitWith('missing', 'secondary');
   expect(tabs.get().split).toBe(false);
   tabs.splitWith(a, 'secondary');
-  expect(tabs.get().selected).toEqual({ primary: null, secondary: a });
+  expect(tabs.get().selected).toEqual({ primary: a, secondary: null });
+  expect(tabs.get().split).toBe(false);
+  const b = open('b.md');
+  tabs.splitWith(a, 'secondary');
+  expect(tabs.get().split).toBe(true);
   tabs.splitWith(a, 'primary');
   expect(tabs.get().selected).toEqual({ primary: a, secondary: null });
-  expect(tabs.get().tabs).toHaveLength(1);
+  expect(tabs.get().split).toBe(false);
+  expect(tabs.get().tabs).toHaveLength(2);
+  expect(tabs.get().tabs.find((t) => t.id === b)?.pane).toBe('primary');
+  valid();
+});
+it.each(['primary', 'secondary'] as const)(
+  'closing the last %s document expands the other pane preserving dirty content',
+  (pane) => {
+    const a = open('a.md'),
+      b = open('b.txt');
+    tabs.edit(a, 'keep');
+    tabs.splitWith(b, pane);
+    tabs.close(b);
+    expect(tabs.get().split).toBe(false);
+    expect(tabs.get().active).toBe(a);
+    expect(tabs.get().tabs[0].text).toBe('keep');
+    expect(tabs.get().tabs[0].dirty).toBe(true);
+    valid();
+  },
+);
+it('untitled names are unambiguous and cycling stays within the focused pane', () => {
+  tabs.new();
+  tabs.new();
+  tabs.new('markdown');
+  expect(tabs.get().tabs.map((t) => t.name)).toEqual([
+    'Untitled.txt',
+    'Untitled 2.txt',
+    'Untitled.md',
+  ]);
+  tabs.cycle(1);
+  expect(tabs.get().tabs.find((t) => t.id === tabs.get().active)?.name).toBe('Untitled.txt');
+  tabs.splitView();
+  const focused = tabs.get().active;
+  tabs.cycle(1);
+  expect(tabs.get().active).toBe(focused);
   valid();
 });

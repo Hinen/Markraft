@@ -5,18 +5,21 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { tabs, useTabs, type EditorTab } from '../tabs/tabStore';
 import { TabBars } from '../tabs/TabBars';
 import { PaneDivider } from '../tabs/PaneDivider';
-import { files } from '../files/fileService';
+import { Modal } from './Modal';
+import { files, type DocumentFile } from '../files/fileService';
 import { normalize } from '../files/fileTypes';
 import { EditorHost } from '../editors/EditorHost';
-import { editorActions, type EditorAction } from '../editors/editorCommands';
+import { editorActions, focusEditor, type EditorAction } from '../editors/editorCommands';
 import { useSettings, setSettings } from '../settings/settingsStore';
 type Prompt = {
+  id: string;
   title: string;
   message: string;
   choices: string[];
   resolve: (value: string | null) => void;
   input?: string;
 };
+type MenuItem = [string, string, () => void, boolean?];
 export function App() {
   const state = useTabs();
   const settings = useSettings();
@@ -27,9 +30,11 @@ export function App() {
   const promptRef = useRef<Prompt | null>(null);
   const [input, setInput] = useState('');
   const [preferences, setPreferences] = useState(false);
+  const [fontSizeDraft, setFontSizeDraft] = useState(String(settings.fontSize));
   const [menu, setMenu] = useState<string | null>(null);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const busy = useRef(false);
+  const pendingSaves = useRef(new Map<string, boolean>());
   const [working, setWorking] = useState(false);
   const [systemDark, setSystemDark] = useState(matchMedia('(prefers-color-scheme: dark)').matches);
   function ask(title: string, message: string, choices: string[], initial?: string) {
@@ -38,7 +43,9 @@ export function App() {
         resolve(null);
         return;
       }
-      const request = { title, message, choices, resolve, input: initial };
+      const request = { id: crypto.randomUUID(), title, message, choices, resolve, input: initial };
+      setMenu(null);
+      setPreferences(false);
       promptRef.current = request;
       setPrompt(request);
       setInput(initial || '');
@@ -52,6 +59,7 @@ export function App() {
   }
   async function guarded(task: () => Promise<unknown>) {
     if (busy.current) return;
+    setError('');
     busy.current = true;
     setWorking(true);
     try {
@@ -61,7 +69,20 @@ export function App() {
     } finally {
       busy.current = false;
       setWorking(false);
+      const pending = pendingSaves.current.entries().next().value;
+      if (pending) {
+        pendingSaves.current.delete(pending[0]);
+        requestSave(pending[0], pending[1]);
+      }
     }
+  }
+  function requestSave(id: string, saveAs = false) {
+    if (busy.current) {
+      pendingSaves.current.set(id, saveAs || pendingSaves.current.get(id) || false);
+      setNotice('최근 편집 내용의 저장을 기다리고 있습니다.');
+      return;
+    }
+    void guarded(() => save(id, saveAs));
   }
   function getActive() {
     const current = tabs.get();
@@ -70,6 +91,17 @@ export function App() {
   async function open() {
     const docs = await files.open();
     docs.forEach((doc) => tabs.open(doc));
+  }
+  function reloadIfUnchanged(id: string, text: string, disk: DocumentFile) {
+    const latest = tabs.get().tabs.find((t) => t.id === id);
+    if (!latest) return;
+    if (latest.text !== text) {
+      setError(
+        '파일을 불러오는 동안 새 편집이 생겼습니다. 입력 내용을 유지했습니다. 다시 불러오려면 Reload를 눌러 주세요.',
+      );
+      return;
+    }
+    tabs.reload(id, disk);
   }
   async function resolveConflict(tab: EditorTab) {
     const choice = await ask(
@@ -80,13 +112,13 @@ export function App() {
     if (!choice || choice === 'Cancel') return false;
     const disk = await files.read(tab.path!);
     if (choice === 'Reload') {
-      tabs.reload(tab.id, disk);
+      reloadIfUnchanged(tab.id, tab.text, disk);
       return false;
     }
     tabs.patch(tab.id, {
       revision: disk.revision,
       savedText: normalize(disk.text),
-      dirty: tab.text !== normalize(disk.text),
+      dirty: tabs.get().tabs.find((t) => t.id === tab.id)?.text !== normalize(disk.text),
       conflict: null,
     });
     return true;
@@ -121,22 +153,54 @@ export function App() {
     setNotice(`${doc.name} 저장됨`);
     return true;
   }
-  async function close(id: string): Promise<boolean> {
+  async function confirmClose(id: string): Promise<boolean> {
     const tab = tabs.get().tabs.find((t) => t.id === id);
     if (!tab) return true;
     if (tab.dirty) {
       tabs.select(id);
-      const choice = await ask('변경 사항을 저장할까요?', tab.name, ['Save', 'Discard', 'Cancel']);
+      const choice = await ask('변경 사항을 저장할까요?', tab.path || tab.name, [
+        'Save',
+        'Discard',
+        'Cancel',
+      ]);
       if (!choice || choice === 'Cancel') return false;
       if (choice === 'Save' && !(await save(id))) return false;
       if (tabs.get().tabs.find((t) => t.id === id)?.dirty && choice === 'Save') return false;
     }
+    return true;
+  }
+  async function close(id: string): Promise<boolean> {
+    if (!(await confirmClose(id))) return false;
     tabs.close(id);
+    focusEditor();
     return true;
   }
   async function closeAll() {
-    for (const tab of [...tabs.get().tabs]) if (!(await close(tab.id))) return false;
-    return true;
+    const originalActive = tabs.get().active;
+    const closing = [...tabs.get().tabs];
+    const confirmedText = new Map<string, string>();
+    for (const tab of closing) {
+      if (!(await confirmClose(tab.id))) {
+        if (originalActive) tabs.select(originalActive);
+        focusEditor();
+        return false;
+      }
+      const current = tabs.get().tabs.find((t) => t.id === tab.id);
+      if (current) confirmedText.set(tab.id, current.text);
+    }
+    const changed = tabs
+      .get()
+      .tabs.find(
+        (tab) => confirmedText.has(tab.id) && tab.dirty && tab.text !== confirmedText.get(tab.id),
+      );
+    if (changed) {
+      tabs.select(changed.id);
+      setError('닫기를 처리하는 동안 새 편집이 생겼습니다. 모든 탭과 입력 내용을 유지했습니다.');
+      focusEditor();
+      return false;
+    }
+    for (const tab of closing) tabs.close(tab.id);
+    return tabs.get().tabs.length === 0;
   }
   function toggle() {
     const tab = getActive();
@@ -172,8 +236,30 @@ export function App() {
       value,
     );
   }
-  const handlers = useRef({ closeAll, close, save, open, toggle, edit, guarded });
-  handlers.current = { closeAll, close, save, open, toggle, edit, guarded };
+  const handlers = useRef({ closeAll, close, save, requestSave, open, toggle, edit, guarded });
+  handlers.current = { closeAll, close, save, requestSave, open, toggle, edit, guarded };
+  useEffect(() => {
+    if (preferences) setFontSizeDraft(String(settings.fontSize));
+  }, [preferences]);
+  useEffect(() => {
+    if (!menu) return;
+    const frame = requestAnimationFrame(() =>
+      document.querySelector<HTMLButtonElement>('.menu button:not(:disabled)')?.focus(),
+    );
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !event.isComposing) {
+        event.preventDefault();
+        event.stopPropagation();
+        setMenu(null);
+        focusEditor();
+      }
+    };
+    window.addEventListener('keydown', dismiss, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', dismiss, true);
+    };
+  }, [menu]);
   useEffect(() => {
     const media = matchMedia('(prefers-color-scheme: dark)');
     const update = () => setSystemDark(media.matches);
@@ -254,7 +340,7 @@ export function App() {
                 const latest = tabs.get().tabs.find((t) => t.id === tab.id);
                 if (latest?.dirty)
                   tabs.patch(tab.id, { conflict: '파일이 외부에서 변경되었습니다.' });
-                else if (latest) tabs.reload(tab.id, disk);
+                else if (latest && latest.revision === current.revision) tabs.reload(tab.id, disk);
               }
             }
           } catch {
@@ -276,11 +362,28 @@ export function App() {
   }, []);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
+      if ((event.target as Element)?.closest?.('[role="dialog"]')) {
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          ['n', 'w', 'o', 's', 'm', 'tab', 'pageup', 'pagedown'].includes(event.key.toLowerCase())
+        )
+          event.preventDefault();
+        return;
+      }
       if (event.isComposing || !(event.ctrlKey || event.metaKey) || promptRef.current) return;
       const key = event.key.toLowerCase();
+      if (
+        ['b', 'i', 'y'].includes(key) &&
+        (event.target as Element)?.closest?.('input,textarea,select')
+      )
+        return;
       const handler = handlers.current;
       const tab = getActive();
-      if (key === 'n') {
+      if (key === 'tab' || key === 'pageup' || key === 'pagedown') {
+        event.preventDefault();
+        tabs.cycle(key === 'pageup' || (key === 'tab' && event.shiftKey) ? -1 : 1);
+        focusEditor();
+      } else if (key === 'n') {
         event.preventDefault();
         tabs.new(event.shiftKey ? 'markdown' : 'text');
       } else if (key === 'o') {
@@ -288,7 +391,7 @@ export function App() {
         void handler.guarded(handler.open);
       } else if (key === 's') {
         event.preventDefault();
-        if (tab) void handler.guarded(() => handler.save(tab.id, event.shiftKey));
+        if (tab) handler.requestSave(tab.id, event.shiftKey);
       } else if (key === 'w') {
         event.preventDefault();
         void handler.guarded(() =>
@@ -312,16 +415,16 @@ export function App() {
     window.addEventListener('keydown', keydown, true);
     return () => window.removeEventListener('keydown', keydown, true);
   }, []);
-  const fileMenu: [string, string, () => void][] = [
+  const fileMenu: MenuItem[] = [
     ['New text', 'Ctrl+N', () => tabs.new()],
     ['New Markdown', 'Ctrl+Shift+N', () => tabs.new('markdown')],
     ['Open…', 'Ctrl+O', () => void guarded(open)],
-    ['Save', 'Ctrl+S', () => active && void guarded(() => save(active.id))],
-    ['Save As…', 'Ctrl+Shift+S', () => active && void guarded(() => save(active.id, true))],
-    ['Close tab', 'Ctrl+W', () => active && void guarded(() => close(active.id))],
-    ['Close all tabs', 'Ctrl+Shift+W', () => void guarded(closeAll)],
+    ['Save', 'Ctrl+S', () => active && requestSave(active.id), !active],
+    ['Save As…', 'Ctrl+Shift+S', () => active && requestSave(active.id, true), !active],
+    ['Close tab', 'Ctrl+W', () => active && void guarded(() => close(active.id)), !active],
+    ['Close all tabs', 'Ctrl+Shift+W', () => void guarded(closeAll), !state.tabs.length],
   ];
-  const editMenu: [string, string, () => void][] = [
+  const editMenu: MenuItem[] = [
     ['Undo', 'Ctrl+Z', () => void edit('undo')],
     ['Redo', 'Ctrl+Y', () => void edit('redo')],
     ['Find', 'Ctrl+F', () => void edit('find')],
@@ -329,12 +432,13 @@ export function App() {
     ['Go to line', 'Ctrl+G', () => void edit('goto')],
     ['Select all', 'Ctrl+A', () => void edit('selectAll')],
   ];
-  const viewMenu: [string, string, () => void][] = [
-    ['Rich / Raw', 'Ctrl+Shift+M', toggle],
+  const viewMenu: MenuItem[] = [
+    ['Rich / Raw', 'Ctrl+Shift+M', toggle, active?.fileType !== 'markdown'],
     [
       state.split ? 'Merge panes' : 'Split view',
       '',
       () => (state.split ? tabs.mergePanes() : tabs.splitView()),
+      !state.split && state.tabs.length < 2,
     ],
     ...(state.split
       ? [
@@ -366,6 +470,17 @@ export function App() {
             <button
               className={menu === name ? 'selected' : ''}
               onClick={() => setMenu(menu === name ? null : name)}
+              aria-haspopup="menu"
+              aria-expanded={menu === name}
+              onPointerEnter={() => {
+                if (menu && menu !== name) setMenu(name);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  setMenu(name);
+                }
+              }}
             >
               {name}
             </button>
@@ -376,7 +491,38 @@ export function App() {
                   aria-label="Close menu"
                   onClick={() => setMenu(null)}
                 />
-                <div className="menu" role="menu">
+                <div
+                  className="menu"
+                  role="menu"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      setMenu(null);
+                      focusEditor();
+                    }
+                    const items = Array.from(
+                      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                        'button:not(:disabled)',
+                      ),
+                    );
+                    if (
+                      items.length &&
+                      ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
+                    ) {
+                      event.preventDefault();
+                      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+                      items[
+                        event.key === 'Home'
+                          ? 0
+                          : event.key === 'End'
+                            ? items.length - 1
+                            : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) %
+                              items.length
+                      ].focus();
+                    }
+                    if (event.key === 'Tab') setMenu(null);
+                  }}
+                >
                   {(name === 'File'
                     ? fileMenu
                     : name === 'Edit'
@@ -393,11 +539,12 @@ export function App() {
                                 );
                               },
                             ],
-                          ] as [string, string, () => void][])
-                  ).map(([label, shortcut, action]) => (
+                          ] as MenuItem[])
+                  ).map(([label, shortcut, action, disabled]) => (
                     <button
                       role="menuitem"
                       key={label}
+                      disabled={disabled || (name === 'Edit' && !active)}
                       onClick={() => {
                         setMenu(null);
                         action();
@@ -416,8 +563,14 @@ export function App() {
         <button
           className="split-toggle"
           aria-label={state.split ? 'Merge panes' : 'Split view'}
-          title={state.split ? '화면 분할 해제' : '화면을 좌우로 나누기'}
-          disabled={!state.tabs.length}
+          title={
+            state.split
+              ? '화면 분할 해제'
+              : state.tabs.length < 2
+                ? '문서를 두 개 이상 열면 분할할 수 있습니다'
+                : '화면을 좌우로 나누기'
+          }
+          disabled={!state.split && state.tabs.length < 2}
           aria-pressed={state.split}
           onClick={() => (state.split ? tabs.mergePanes() : tabs.splitView())}
         >
@@ -434,19 +587,29 @@ export function App() {
       />
       {active && (
         <div className="toolbar">
-          <span className="document-name">{active.name}</span>
+          <span className="document-name" title={active.path || active.name}>
+            {active.name}
+          </span>
           {active.fileType === 'markdown' && (
             <>
               <div className="mode-switch">
                 <button
                   className={active.mode === 'rich' ? 'selected' : ''}
-                  onClick={() => tabs.patch(active.id, { mode: 'rich' })}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    tabs.patch(active.id, { mode: 'rich' });
+                    focusEditor();
+                  }}
                 >
                   Rich
                 </button>
                 <button
                   className={active.mode === 'raw' ? 'selected' : ''}
-                  onClick={() => tabs.patch(active.id, { mode: 'raw' })}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    tabs.patch(active.id, { mode: 'raw' });
+                    focusEditor();
+                  }}
                 >
                   Raw
                 </button>
@@ -508,7 +671,8 @@ export function App() {
           <button
             className="save-button"
             disabled={working}
-            onClick={() => void guarded(() => save(active.id))}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => requestSave(active.id)}
           >
             Save
           </button>
@@ -525,35 +689,47 @@ export function App() {
       {active?.conflict && (
         <div role="alert" className="banner conflict">
           <span>{active.conflict}</span>
-          <button
-            onClick={() =>
-              void guarded(async () => {
-                const choice = await ask(
-                  '디스크 내용 다시 불러오기',
-                  '저장하지 않은 편집 내용은 사라집니다.',
-                  ['Reload', 'Cancel'],
-                );
-                if (choice === 'Reload') tabs.reload(active.id, await files.read(active.path!));
-              })
-            }
-          >
-            Reload
-          </button>
-          <button
-            onClick={() =>
-              void guarded(async () => {
-                const doc = await files.read(active.path!);
-                tabs.patch(active.id, {
-                  revision: doc.revision,
-                  savedText: normalize(doc.text),
-                  dirty: active.text !== normalize(doc.text),
-                  conflict: null,
-                });
-              })
-            }
-          >
-            Keep Mine
-          </button>
+          {active.conflict.startsWith('파일이 삭제') ? (
+            <button onClick={() => void guarded(() => save(active.id, true))}>Save As…</button>
+          ) : (
+            <>
+              <button
+                onClick={() =>
+                  void guarded(async () => {
+                    const choice = await ask(
+                      '디스크 내용 다시 불러오기',
+                      '저장하지 않은 편집 내용은 사라집니다.',
+                      ['Reload', 'Cancel'],
+                    );
+                    if (choice === 'Reload') {
+                      const text = tabs.get().tabs.find((t) => t.id === active.id)?.text;
+                      const disk = await files.read(active.path!);
+                      if (text !== undefined) reloadIfUnchanged(active.id, text, disk);
+                    }
+                  })
+                }
+              >
+                Reload
+              </button>
+              <button
+                onClick={() =>
+                  void guarded(async () => {
+                    const doc = await files.read(active.path!);
+                    tabs.patch(active.id, {
+                      revision: doc.revision,
+                      savedText: normalize(doc.text),
+                      dirty:
+                        tabs.get().tabs.find((t) => t.id === active.id)?.text !==
+                        normalize(doc.text),
+                      conflict: null,
+                    });
+                  })
+                }
+              >
+                Keep Mine
+              </button>
+            </>
+          )}
         </div>
       )}
       {!state.tabs.length && (
@@ -592,41 +768,6 @@ export function App() {
             />
           ))}
           {state.split && <PaneDivider ratio={splitRatio} onResize={setSplitRatio} />}
-          {state.split &&
-            (['primary', 'secondary'] as const)
-              .filter((pane) => !state.selected[pane])
-              .map((pane) => (
-                <div
-                  key={pane}
-                  className="empty-pane"
-                  data-editor-pane={pane}
-                  style={{ gridColumn: pane === 'primary' ? 1 : 3 }}
-                  onClick={(event) => {
-                    if (event.target === event.currentTarget) tabs.focusPane(pane);
-                  }}
-                >
-                  <p>
-                    탭을 이쪽 탭 표시줄로 옮기거나
-                    <br />새 문서를 열어 나란히 편집하세요.
-                  </p>
-                  <button
-                    onClick={() => {
-                      tabs.focusPane(pane);
-                      void guarded(open);
-                    }}
-                  >
-                    Open a file
-                  </button>
-                  <button
-                    onClick={() => {
-                      tabs.focusPane(pane);
-                      tabs.new();
-                    }}
-                  >
-                    New text
-                  </button>
-                </div>
-              ))}
         </div>
       )}
       <footer className="statusbar">
@@ -648,96 +789,95 @@ export function App() {
         </div>
       </footer>
       {prompt && (
-        <div className="modal-backdrop">
-          <div
-            className="dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="prompt-title"
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') answer(null);
-            }}
-          >
-            <h2 id="prompt-title">{prompt.title}</h2>
-            <p>{prompt.message}</p>
-            {prompt.input !== undefined && (
-              <input
-                autoFocus
-                aria-label="URL or relative path"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') answer(input);
-                }}
-              />
-            )}
-            <div className="dialog-actions">
-              {prompt.choices.map((choice, i) => (
-                <button
-                  key={choice}
-                  autoFocus={i === 0 && prompt.input === undefined}
-                  className={i === 0 ? 'primary' : ''}
-                  onClick={() =>
-                    answer(choice === 'Cancel' ? null : prompt.input !== undefined ? input : choice)
-                  }
-                >
-                  {choice}
-                </button>
-              ))}
-            </div>
+        <Modal key={prompt.id} titleId="prompt-title" onCancel={() => answer(null)}>
+          <h2 id="prompt-title">{prompt.title}</h2>
+          <p>{prompt.message}</p>
+          {prompt.input !== undefined && (
+            <input
+              autoFocus
+              aria-label="URL or relative path"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) answer(input);
+              }}
+            />
+          )}
+          <div className="dialog-actions">
+            {prompt.choices.map((choice, i) => (
+              <button
+                key={choice}
+                autoFocus={i === 0 && prompt.input === undefined}
+                className={i === 0 ? 'primary' : ''}
+                onClick={() =>
+                  answer(choice === 'Cancel' ? null : prompt.input !== undefined ? input : choice)
+                }
+              >
+                {choice}
+              </button>
+            ))}
           </div>
-        </div>
+        </Modal>
       )}
       {preferences && (
-        <div className="modal-backdrop">
-          <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-            <h2 id="settings-title">Editor settings</h2>
-            <label>
-              Theme
-              <select
-                value={settings.theme}
-                onChange={(e) => setSettings({ theme: e.target.value as typeof settings.theme })}
-              >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </label>
-            <label>
-              Font size
-              <input
-                type="number"
-                min={10}
-                max={32}
-                value={settings.fontSize}
-                onChange={(e) =>
-                  setSettings({ fontSize: Math.max(10, Math.min(32, Number(e.target.value))) })
-                }
-              />
-            </label>
-            <label>
-              Editor font
-              <input
-                value={settings.editorFont}
-                onChange={(e) => setSettings({ editorFont: e.target.value })}
-              />
-            </label>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={settings.wordWrap}
-                onChange={(e) => setSettings({ wordWrap: e.target.checked })}
-              />
-              Word wrap
-            </label>
-            <p className="muted">설정만 기기에 저장됩니다. 문서 내용은 설정에 저장하지 않습니다.</p>
-            <div className="dialog-actions">
-              <button className="primary" onClick={() => setPreferences(false)}>
-                Done
-              </button>
-            </div>
+        <Modal titleId="settings-title" onCancel={() => setPreferences(false)}>
+          <h2 id="settings-title">Editor settings</h2>
+          <label>
+            Theme
+            <select
+              value={settings.theme}
+              onChange={(e) => setSettings({ theme: e.target.value as typeof settings.theme })}
+            >
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <label>
+            Font size
+            <input
+              type="number"
+              min={10}
+              max={32}
+              value={fontSizeDraft}
+              onChange={(e) => {
+                setFontSizeDraft(e.target.value);
+                const size = Number(e.target.value);
+                if (size >= 10 && size <= 32) setSettings({ fontSize: size });
+              }}
+              onBlur={() => {
+                const parsed = Number(fontSizeDraft);
+                const size =
+                  fontSizeDraft && Number.isFinite(parsed)
+                    ? Math.max(10, Math.min(32, parsed))
+                    : settings.fontSize;
+                setFontSizeDraft(String(size));
+                setSettings({ fontSize: size });
+              }}
+            />
+          </label>
+          <label>
+            Editor font
+            <input
+              value={settings.editorFont}
+              onChange={(e) => setSettings({ editorFont: e.target.value })}
+            />
+          </label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={settings.wordWrap}
+              onChange={(e) => setSettings({ wordWrap: e.target.checked })}
+            />
+            Word wrap
+          </label>
+          <p className="muted">설정만 기기에 저장됩니다. 문서 내용은 설정에 저장하지 않습니다.</p>
+          <div className="dialog-actions">
+            <button className="primary" onClick={() => setPreferences(false)}>
+              Done
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
     </main>
   );

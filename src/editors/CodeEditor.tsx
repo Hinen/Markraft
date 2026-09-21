@@ -115,7 +115,7 @@ export function CodeEditor({
   useEffect(() => {
     if (visible) {
       view.current?.requestMeasure();
-      if (focused) view.current?.focus();
+      if (focused && !root.current?.contains(document.activeElement)) view.current?.focus();
     }
   }, [visible, focused]);
   return <div ref={root} className="code-editor" aria-label={`${tab.fileType} source editor`} />;

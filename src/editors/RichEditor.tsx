@@ -91,8 +91,11 @@ export function RichEditor({
         setReady(true);
         editorActions.set(`${tab.id}:rich`, (action, value) => {
           if (action === 'find' || action === 'replace') {
-            setSearch('');
-            requestAnimationFrame(() => searchInput.current?.focus());
+            setSearch((previous) => previous ?? '');
+            requestAnimationFrame(() => {
+              searchInput.current?.focus();
+              searchInput.current?.select();
+            });
             return;
           }
           instance.action((ctx) => {
@@ -204,7 +207,12 @@ export function RichEditor({
     });
   }, [tab.text, ready, visible]);
   useEffect(() => {
-    if (visible && focused && ready)
+    if (
+      visible &&
+      focused &&
+      ready &&
+      !root.current?.closest('.rich-wrapper')?.contains(document.activeElement)
+    )
       editor.current?.action((ctx) => ctx.get(editorViewCtx).focus());
   }, [visible, focused, ready]);
   useEffect(() => {

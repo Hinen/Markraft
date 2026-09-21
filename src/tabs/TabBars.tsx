@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { tabs, useTabs, type Pane } from './tabStore';
+import { focusEditor } from '../editors/editorCommands';
 
 type Drop = {
   pane: Pane;
@@ -17,14 +18,29 @@ export function TabBars({
   disabled: boolean;
 }) {
   const state = useTabs();
-  const drag = useRef<{ id: string; pointer: number; x: number; y: number; moved: boolean } | null>(
-    null,
-  );
+  const drag = useRef<{
+    id: string;
+    pointer: number;
+    x: number;
+    y: number;
+    lastX: number;
+    lastY: number;
+    moved: boolean;
+    capture: HTMLButtonElement;
+  } | null>(null);
   const suppressClick = useRef(false);
   const [dragged, setDragged] = useState<string | null>(null);
   const [drop, setDrop] = useState<Drop | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const animation = useRef<number | null>(null);
+  const order = state.tabs.map((t) => `${t.pane}:${t.id}`).join(',');
   function finish() {
+    const previous = drag.current;
     drag.current = null;
+    if (animation.current !== null) cancelAnimationFrame(animation.current);
+    animation.current = null;
+    if (previous?.capture.hasPointerCapture(previous.pointer))
+      previous.capture.releasePointerCapture(previous.pointer);
     setDragged(null);
     setDrop(null);
   }
@@ -33,6 +49,7 @@ export function TabBars({
       if (event.key === 'Escape' && drag.current) {
         suppressClick.current = drag.current.moved;
         finish();
+        focusEditor();
       }
     };
     window.addEventListener('keydown', cancel);
@@ -48,13 +65,45 @@ export function TabBars({
       window.removeEventListener('blur', blur);
     };
   }, []);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (drag.current) return;
+      for (const id of Object.values(state.selected)) {
+        Array.from(root.current?.querySelectorAll<HTMLElement>('[data-tab-id]') || [])
+          .find((el) => el.dataset.tabId === id)
+          ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [order, state.selected.primary, state.selected.secondary]);
+  useEffect(() => {
+    const element = root.current!;
+    const wheel = (event: WheelEvent) => {
+      const bar = (event.target as Element).closest<HTMLElement>('[data-tab-pane]');
+      if (
+        bar &&
+        bar.scrollWidth > bar.clientWidth &&
+        Math.abs(event.deltaY) > Math.abs(event.deltaX) &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        bar.scrollLeft += event.deltaY;
+      }
+    };
+    element.addEventListener('wheel', wheel, { passive: false });
+    return () => element.removeEventListener('wheel', wheel);
+  }, []);
+  useEffect(() => {
+    if (disabled) finish();
+  }, [disabled]);
   function destination(x: number, y: number): Drop | null {
+    const layout = tabs.get();
     const node = document.elementFromPoint(x, y);
     const bar = node?.closest<HTMLElement>('[data-tab-pane]');
     if (!bar) {
       const workspace = node?.closest<HTMLElement>('.editor-workspace');
       if (!workspace) return null;
-      if (state.split) {
+      if (layout.split) {
         const host = node?.closest<HTMLElement>('[data-editor-pane]');
         if (!host) return null;
         const { left, top, width, height } = host.getBoundingClientRect();
@@ -65,6 +114,7 @@ export function TabBars({
           area: { left, top, width, height },
         };
       }
+      if (layout.tabs.length < 2) return null;
       const bounds = workspace.getBoundingClientRect();
       const fraction = (x - bounds.left) / bounds.width;
       if (fraction > 0.25 && fraction < 0.75) return null;
@@ -87,9 +137,6 @@ export function TabBars({
       };
     }
     const pane = bar.dataset.tabPane as Pane;
-    const bounds = bar.getBoundingClientRect();
-    if (x < bounds.left + 28) bar.scrollLeft -= 24;
-    if (x > bounds.right - 28) bar.scrollLeft += 24;
     const target = node?.closest<HTMLElement>('[data-tab-id]');
     const rect = target?.getBoundingClientRect();
     return {
@@ -105,9 +152,31 @@ export function TabBars({
       return;
     event.preventDefault();
     current.moved = true;
+    current.lastX = event.clientX;
+    current.lastY = event.clientY;
     suppressClick.current = true;
     setDragged(current.id);
-    const next = destination(event.clientX, event.clientY);
+    preview(destination(event.clientX, event.clientY));
+    if (animation.current === null) animation.current = requestAnimationFrame(scrollDrag);
+  }
+  function scrollDrag() {
+    const current = drag.current;
+    if (!current?.moved) {
+      animation.current = null;
+      return;
+    }
+    const bar = document
+      .elementFromPoint(current.lastX, current.lastY)
+      ?.closest<HTMLElement>('[data-tab-pane]');
+    if (bar) {
+      const bounds = bar.getBoundingClientRect();
+      if (current.lastX < bounds.left + 28) bar.scrollLeft -= 10;
+      else if (current.lastX > bounds.right - 28) bar.scrollLeft += 10;
+    }
+    preview(destination(current.lastX, current.lastY));
+    animation.current = requestAnimationFrame(scrollDrag);
+  }
+  function preview(next: Drop | null) {
     setDrop((previous) =>
       previous?.pane === next?.pane &&
       previous?.target === next?.target &&
@@ -122,7 +191,7 @@ export function TabBars({
     );
   }
   return (
-    <div className={`tabbars ${state.split ? 'is-split' : ''}`}>
+    <div ref={root} className={`tabbars ${state.split ? 'is-split' : ''}`}>
       {(['primary', ...(state.split ? ['secondary'] : [])] as Pane[]).map((pane) => (
         <nav
           key={pane}
@@ -138,6 +207,15 @@ export function TabBars({
                 className={`tab ${state.selected[pane] === tab.id ? 'active' : ''} ${dragged === tab.id ? 'dragging' : ''} ${drop?.target === tab.id ? (drop.before ? 'drop-before' : 'drop-after') : ''}`}
                 key={tab.id}
                 data-tab-id={tab.id}
+                onAuxClick={(event) => {
+                  if (event.button === 1) {
+                    event.preventDefault();
+                    if (!disabled) onClose(tab.id);
+                  }
+                }}
+                onMouseDown={(event) => {
+                  if (event.button === 1) event.preventDefault();
+                }}
               >
                 <button
                   title={tab.path || tab.name}
@@ -152,6 +230,9 @@ export function TabBars({
                       pointer: event.pointerId,
                       x: event.clientX,
                       y: event.clientY,
+                      lastX: event.clientX,
+                      lastY: event.clientY,
+                      capture: event.currentTarget,
                       moved: false,
                     };
                     event.currentTarget.setPointerCapture(event.pointerId);
@@ -167,6 +248,7 @@ export function TabBars({
                         tabs.move(current.id, target.pane, target.target, target.before);
                     }
                     finish();
+                    if (current.moved) focusEditor();
                   }}
                   onPointerCancel={() => {
                     suppressClick.current = !!drag.current?.moved;
@@ -182,7 +264,10 @@ export function TabBars({
                     if (suppressClick.current) {
                       event.preventDefault();
                       suppressClick.current = false;
-                    } else tabs.select(tab.id);
+                    } else {
+                      tabs.select(tab.id);
+                      focusEditor(tab.id);
+                    }
                   }}
                   onKeyDown={(event) => {
                     if (
@@ -209,7 +294,7 @@ export function TabBars({
                           ? 'Y'
                           : 'T'}
                   </span>
-                  {tab.name}
+                  <span className="tab-name">{tab.name}</span>
                   {tab.dirty && (
                     <span aria-label="Unsaved changes" className="dirty">
                       ●
@@ -233,6 +318,7 @@ export function TabBars({
               tabs.focusPane(pane);
               tabs.new();
             }}
+            disabled={disabled}
           >
             +
           </button>
