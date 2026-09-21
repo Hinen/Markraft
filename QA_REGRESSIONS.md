@@ -22,3 +22,15 @@
 - 원래 사용자 QA.md는 `Docs/markdown-preservation/QA.user-saved.md`에 백업했다. 복원 직전에 사용자가 추가로 수정하지 않았음을 바이트 비교한 뒤 자동 재정렬만 복구했다. 사용자가 넣은 공백 하나는 그대로 남기고 커밋에 포함하지 않는다.
 
 Windows IME와 기존 QA의 NOT RUN 항목은 이번 수정으로 통과 처리하지 않는다.
+
+## 탭 순서 이동과 좌우 화면 분할 — 2026-09-21
+
+- 탭 제목 pointer drag로 순서 변경, 다른 영역으로 이동, Esc/영역 밖 drop 취소. 키보드 대안은 탭의 Alt+Shift+←/→ 및 View 메뉴의 영역 이동이다. Windows 네이티브 파일 드롭과 겹치지 않도록 HTML native drag 대신 pointer capture를 사용한다.
+- Split/Merge, 영역별 선택 탭과 전역 활성 문서, 빈 영역에서 문서 열기/생성, 가운데 경계선 resize(25–75%, 더블클릭 50%)를 추가했다. 저장·편집 명령은 활성 문서로 전달한다.
+- 편집기는 하나의 React 부모 아래에서 같은 key로 유지하고 CSS grid 배치만 변경한다. 탭 이동/분할 때문에 편집기를 다시 생성하지 않는다.
+- Vitest 61/61 PASS: 순서/영역 변경, 문서 객체·dirty 유지, merge, 빈 영역 열기, 중복 파일의 기존 영역 선택, 닫기 후 선택 상태, 잘못된 이동 방지.
+- Playwright 18/18 PASS: 실제 pointer 이동으로 탭 순서/영역 변경, 취소와 키보드 이동, 편집기 DOM 인스턴스 및 undo 유지, 활성 영역 저장 대상, resize, dirty 닫기 Cancel/Discard, 좁은 창 표시. 기존 Markdown 한 글자 원문 보존 회귀도 포함한다.
+- 테스트 중 빈 영역에서 pointerdown/focus로 영역을 바꾸면 toolbar 높이 변화로 버튼 click이 취소되는 문제를 수정했다. 파일 열기 테스트 대역의 disk 목록 누락도 고쳤고, 네이티브 저장 검증과 혼동하지 않는다.
+- NSIS 빌드·설치 후 실제 WebView2/Rust IPC 시나리오 **5/5 PASS**: pointer 탭 재정렬과 CodeMirror undo/저장, 좌우 활성 문서별 실제 파일 저장과 수정하지 않은 Markdown 표 원문 보존, 경계선 60% resize, 영역 간 이동/Merge와 Rich undo·원본 바이트 복원, dirty 닫기 Cancel/Discard. 편집기 DOM 인스턴스가 이동 전후 같은지도 검사했다.
+- 새 설치본에서 기존 QA.md 공백·undo·Raw↔Rich·재열기 원문 보존 검증도 **4/4 PASS**. 검증은 별도 QA 복사본을 사용했다. 임시 CDP 포트는 테스트 종료 후 닫았다.
+- 로컬 로그·JSON·화면 캡처·재현 스크립트·설치 파일 SHA-256은 Git 제외 경로 `Docs/tab-split-qa/`에 둔다. 탭/분할 배치의 재시작 복원과 같은 문서의 양쪽 동시 표시는 이번 범위에 포함하지 않는다.
