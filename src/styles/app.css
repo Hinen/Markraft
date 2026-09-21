@@ -413,9 +413,8 @@ kbd {
 }
 .rich-editor {
   font-family: var(--editor-font);
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 42px 64px 120px;
+  width: 100%;
+  padding: 42px 24px 120px;
   font-size: var(--editor-size);
   line-height: 1.8;
 }
@@ -756,8 +755,7 @@ kbd {
 }
 @media (max-width: 800px) {
   .rich-editor {
-    font-family: var(--editor-font);
-    padding: 28px 30px 80px;
+    padding: 28px 24px 80px;
   }
   .toolbar {
     gap: 8px;
