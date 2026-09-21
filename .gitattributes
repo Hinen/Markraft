@@ -1,0 +1,3 @@
+# Preserve upstream notice text verbatim and keep generated inventories out of code reviews.
+THIRD_PARTY_NOTICES.txt -diff -whitespace linguist-generated=true
+DEPENDENCIES.md linguist-generated=true

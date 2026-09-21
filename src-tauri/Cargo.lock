@@ -2088,7 +2088,6 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tempfile",
  "url",
- "windows-sys 0.59.0",
 ]
 
 [[package]]

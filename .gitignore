@@ -6,3 +6,5 @@ src-tauri/target/
 playwright-report/
 test-results/
 *.tsbuildinfo
+
+src-tauri/gen/

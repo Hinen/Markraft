@@ -24,6 +24,3 @@ tempfile = "3"
 base64 = "0.22"
 open = "5"
 url = "2"
-
-[target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Storage_FileSystem"] }
