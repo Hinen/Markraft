@@ -271,6 +271,10 @@ export function App() {
       settings.theme === 'system' ? (systemDark ? 'dark' : 'light') : settings.theme;
     document.documentElement.style.setProperty('--editor-size', `${settings.fontSize}px`);
     document.documentElement.style.setProperty('--editor-font', settings.editorFont);
+    document.documentElement.style.setProperty(
+      '--prose-font',
+      settings.proseFont.trim() || 'var(--ui-font)',
+    );
   }, [settings, systemDark]);
   useEffect(() => {
     if (!notice) return;
@@ -857,7 +861,14 @@ export function App() {
             />
           </label>
           <label>
-            Editor font
+            Markdown text font
+            <input
+              value={settings.proseFont}
+              onChange={(e) => setSettings({ proseFont: e.target.value })}
+            />
+          </label>
+          <label>
+            Code / Raw font
             <input
               value={settings.editorFont}
               onChange={(e) => setSettings({ editorFont: e.target.value })}

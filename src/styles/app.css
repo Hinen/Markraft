@@ -1,15 +1,12 @@
 :root {
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  --ui-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  --prose-font: var(--ui-font);
+  font-family: var(--ui-font);
   font-synthesis: none;
   --surface: #fff;
   --panel: #f6f7f9;
   --text: #252b34;
-  --muted: #7c8490;
+  --muted: #626c7c;
   --line: #e5e8ed;
   --hover: #edf0f5;
   --selection: #c9ddfa;
@@ -20,12 +17,12 @@
   color-scheme: light;
 }
 :root[data-theme='dark'] {
-  --surface: #1d2027;
-  --panel: #181b21;
-  --text: #d8dce5;
-  --muted: #8a929f;
-  --line: #30353f;
-  --hover: #292e39;
+  --surface: #1f1f1f;
+  --panel: #181818;
+  --text: #e6e6e6;
+  --muted: #a3a3a3;
+  --line: #363636;
+  --hover: #2c2c2c;
   --selection: #354e78;
   --accent: #91b2ff;
   --accent-soft: #29354e;
@@ -87,7 +84,7 @@ main {
   padding: 0 16px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
-  font-size: 12px;
+  font-size: 13px;
 }
 .brand {
   font-weight: 650;
@@ -366,11 +363,12 @@ kbd {
   flex-shrink: 0;
 }
 .format-tools button {
-  font-size: 11px;
-  padding: 5px 6px;
+  font-size: 12px;
+  min-height: 28px;
+  padding: 5px 8px;
 }
 .format-tools select {
-  font-size: 11px;
+  font-size: 12px;
   padding: 4px;
   width: 92px;
   margin-right: 6px;
@@ -412,11 +410,12 @@ kbd {
   min-height: 0;
 }
 .rich-editor {
-  font-family: var(--editor-font);
+  font-family: var(--prose-font);
+  font-synthesis: weight;
   width: 100%;
-  padding: 42px 24px 120px;
+  padding: 24px 24px 96px;
   font-size: var(--editor-size);
-  line-height: 1.8;
+  line-height: 1.65;
 }
 .milkdown .ProseMirror {
   outline: none;
@@ -424,23 +423,34 @@ kbd {
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
-.ProseMirror h1 {
-  font-size: 2.15em;
-  letter-spacing: -1px;
-  line-height: 1.25;
-  margin: 0 0 24px;
+.ProseMirror :is(h1, h2, h3, h4, h5, h6) {
+  font-family: inherit;
   font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: normal;
+  margin: 24px 0 10px;
+}
+.ProseMirror > :first-child {
+  margin-top: 0;
+}
+.ProseMirror h1 {
+  font-size: 1.75em;
+  margin-bottom: 20px;
 }
 .ProseMirror h2 {
-  font-size: 1.55em;
-  line-height: 1.35;
-  margin-top: 32px;
+  font-size: 1.4em;
 }
 .ProseMirror h3 {
-  font-size: 1.25em;
+  font-size: 1.15em;
+}
+.ProseMirror :is(h4, h5, h6) {
+  font-size: 1em;
+}
+.ProseMirror strong {
+  font-weight: 700;
 }
 .ProseMirror p {
-  margin: 12px 0;
+  margin: 8px 0;
 }
 .ProseMirror a {
   color: var(--accent);
@@ -448,7 +458,7 @@ kbd {
   cursor: pointer;
 }
 .ProseMirror blockquote {
-  margin: 20px 0;
+  margin: 16px 0;
   padding: 1px 20px;
   border-left: 3px solid var(--accent);
   color: var(--muted);
@@ -464,7 +474,7 @@ kbd {
 .ProseMirror pre {
   background: var(--panel);
   border: 1px solid var(--line);
-  padding: 20px;
+  padding: 16px;
   border-radius: 8px;
   overflow: auto;
   line-height: 1.6;
@@ -475,7 +485,11 @@ kbd {
 }
 .ProseMirror ul,
 .ProseMirror ol {
-  padding-left: 27px;
+  padding-left: 24px;
+  margin: 8px 0 16px;
+}
+.ProseMirror li :is(ul, ol) {
+  margin: 4px 0;
 }
 .ProseMirror li {
   position: relative;
@@ -490,7 +504,7 @@ kbd {
 .ProseMirror li > input[type='checkbox'] {
   position: absolute;
   left: -23px;
-  top: 8px;
+  top: 0.32em;
   width: 15px;
   height: 15px;
   accent-color: var(--accent);
@@ -500,18 +514,23 @@ kbd {
 .ProseMirror table {
   border-collapse: collapse;
   width: 100%;
-  margin: 24px 0;
-  table-layout: fixed;
+  margin: 16px 0;
+  table-layout: auto;
 }
 .ProseMirror th,
 .ProseMirror td {
   border: 1px solid var(--line);
-  padding: 9px 14px;
+  padding: 10px 14px;
   position: relative;
-  min-width: 60px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.ProseMirror :is(th, td) > p {
+  margin: 2px 0;
 }
 .ProseMirror th {
-  background: var(--panel);
+  background: var(--hover);
+  text-align: left;
   font-weight: 600;
 }
 .ProseMirror .selectedCell:after {
@@ -648,7 +667,7 @@ kbd {
   align-items: center;
   justify-content: space-between;
   padding: 0 15px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
   gap: 12px;
 }
@@ -754,9 +773,6 @@ kbd {
   margin-right: 10px;
 }
 @media (max-width: 800px) {
-  .rich-editor {
-    padding: 28px 24px 80px;
-  }
   .toolbar {
     gap: 8px;
     padding: 8px 12px;

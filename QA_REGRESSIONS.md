@@ -82,3 +82,13 @@ Windows CI에서 드래그 취소 뒤 Alt+Shift+→가 탭을 옮기지 못했�
 - animation frame을 직접 실행해 포커스 경쟁을 재현하는 단위 검사는 수정 전 FAIL, 수정 후 PASS. 새 편집기 등록·대화상자 제거·다른 입력으로 포커스 이동도 검사한다.
 - 수정 후 Vitest **71/71**, 전체 Playwright **36/36**, 문제 시나리오 **30회 연속 PASS**. 로컬 Windows 결과이며 원격 CI 재실행 결과는 아니다.
 - TypeScript/Vite 및 NSIS 빌드·설치 완료. 설치 앱의 기존 UX 8개 시나리오도 재실행해 **8/8 PASS**. 로그는 `Docs/tab-focus-race/`에 기록한다.
+
+## 문서 가독성과 글꼴 분리 — 2026-09-21
+
+사용자가 제공한 Orca/Markraft 비교 화면을 확인했다. Markdown 본문까지 D2Coding/Consolas 고정폭 글꼴을 쓰고, 제목·문단 간격과 동일한 표 열 너비가 적용되어 문서 구조를 읽기 어려웠다.
+
+- Rich 본문은 `system-ui, Segoe UI, Malgun Gothic, sans-serif`로 변경하고 기존 코드/Raw 글꼴 설정과 분리했다. 기존 설정의 테마·크기·코드 글꼴은 유지하며, 새 본문 글꼴 설정이 없는 경우에만 기본값을 적용한다. 설정창에 Markdown text font와 Code / Raw font를 구분해 표시한다.
+- 본문 행간 1.65, 제목 크기/굵기와 문단·목록 간격을 정리했다. 표는 내용에 맞춰 열 너비를 배분하고 긴 경로를 줄바꿈한다. 전체 영역 너비와 좌우 24px 여백은 유지한다.
+- 어두운 테마의 배경을 중립색으로 조정하고 보조 텍스트 대비를 높였다. 메뉴·서식 도구·상태표시줄의 작은 글자를 키웠다.
+- 단위 **71/71**, 전체 E2E **36/36**, TypeScript/Vite 및 NSIS 빌드 PASS. 설치 후 WebView2의 실제 사용 글꼴에서 한글 본문 `Malgun Gothic` 및 `MalgunGothicBold`를 확인했다. 기존 설정 기본값 적용, 코드 글꼴 독립 변경, 640px 분할에서 가로 넘침 없음, 원문 바이트/dirty 불변을 검사했다.
+- 설치 앱의 밝은/어두운 테마 1920px 화면과 640px 분할 화면을 캡처해 직접 확인했다. 기존 Markdown 공백·undo·Raw↔Rich·재열기 바이트 검증 **4/4 PASS**. 로그·측정값·스크립트·화면은 `Docs/readability/`에 기록한다. 가독성의 개선 정도를 자동 테스트 수치로 주장하지 않는다.
