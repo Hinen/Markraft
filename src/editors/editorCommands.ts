@@ -1,2 +1,25 @@
-export type EditorAction = 'undo' | 'redo' | 'find' | 'replace' | 'goto' | 'bold' | 'italic' | 'strike' | 'heading' | 'bullet' | 'ordered' | 'task' | 'quote' | 'code' | 'link' | 'image' | 'table' | 'rowAdd' | 'rowDelete' | 'columnAdd' | 'columnDelete' | 'rule' | 'selectAll';
+export type EditorAction =
+  | 'undo'
+  | 'redo'
+  | 'find'
+  | 'replace'
+  | 'goto'
+  | 'bold'
+  | 'italic'
+  | 'strike'
+  | 'heading'
+  | 'bullet'
+  | 'ordered'
+  | 'task'
+  | 'quote'
+  | 'code'
+  | 'link'
+  | 'image'
+  | 'table'
+  | 'rowAdd'
+  | 'rowDelete'
+  | 'columnAdd'
+  | 'columnDelete'
+  | 'rule'
+  | 'selectAll';
 export const editorActions = new Map<string, (action: EditorAction, value?: string) => void>();
