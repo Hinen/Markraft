@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/i18n';
 export function PaneDivider({
   ratio,
   onResize,
@@ -5,11 +6,12 @@ export function PaneDivider({
   ratio: number;
   onResize: (ratio: number) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       className="pane-divider"
       role="separator"
-      aria-label="Resize editor panes"
+      aria-label={t('Resize editor panes')}
       aria-orientation="vertical"
       aria-valuemin={25}
       aria-valuemax={75}

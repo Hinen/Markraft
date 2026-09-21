@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { getLocale } from '../i18n/i18n';
 export interface DocumentFile {
   path: string;
   name: string;
@@ -17,7 +18,7 @@ export interface SaveRequest {
   suggestedName: string;
 }
 export const files = {
-  open: () => invoke<DocumentFile[]>('open_dialog'),
+  open: () => invoke<DocumentFile[]>('open_dialog', { locale: getLocale() }),
   pending: () => invoke<({ Ok: DocumentFile } | { Err: string })[]>('take_pending'),
   read: (path: string) => invoke<DocumentFile>('read_document', { path }),
   check: (path: string) => invoke<string>('check_document', { path }),

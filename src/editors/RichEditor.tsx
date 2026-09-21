@@ -15,6 +15,7 @@ import { preserveMarkdown } from './preserveMarkdown';
 import { richPlugins } from './markdownPlugins';
 import { editorActions } from './editorCommands';
 import { tabs, type EditorTab } from '../tabs/tabStore';
+import { useI18n, errorText } from '../i18n/i18n';
 export function RichEditor({
   tab,
   visible,
@@ -26,6 +27,7 @@ export function RichEditor({
   focused: boolean;
   onError: (error: string) => void;
 }) {
+  const { t } = useI18n();
   const root = useRef<HTMLDivElement>(null);
   const editor = useRef<Editor | null>(null);
   const current = useRef(tab);
@@ -61,7 +63,7 @@ export function RichEditor({
                         // a whole-document normalization when mapping is unavailable.
                         lastPublished.current = ctx.get(serializerCtx)(view.state.doc);
                         tabs.edit(tab.id, lastPublished.current);
-                        const message = `${String(error)} 편집 내용은 Raw에 보관했습니다. 확인하고 수정한 뒤 저장해 주세요.`;
+                        const message = `${errorText(error)} ${t('Your edits are kept in Raw. Review them before saving.')}`;
                         tabs.patch(tab.id, { richError: message, dirty: true });
                         onError(message);
                       }
@@ -184,7 +186,7 @@ export function RichEditor({
           });
         });
       })
-      .catch((error) => onError(`Markdown editor: ${String(error)}`));
+      .catch((error) => onError(t('Markdown editor: {error}', { error: errorText(error) })));
     return () => {
       cancelled = true;
       editorActions.delete(`${tab.id}:rich`);
@@ -261,7 +263,7 @@ export function RichEditor({
         <div className="rich-search">
           <input
             ref={searchInput}
-            aria-label="Find in document"
+            aria-label={t('Find in document')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -271,17 +273,17 @@ export function RichEditor({
               }
               if (e.key === 'Escape') setSearch(null);
             }}
-            placeholder="Find in document"
+            placeholder={t('Find in document')}
           />
-          <button onClick={() => find(true)}>Next</button>
-          <span>{count}</span>
-          <button aria-label="Close find" onClick={() => setSearch(null)}>
+          <button onClick={() => find(true)}>{t('Next')}</button>
+          <span>{t(count)}</span>
+          <button aria-label={t('Close find')} onClick={() => setSearch(null)}>
             ×
           </button>
         </div>
       )}
       <div className="rich-scroll">
-        <div ref={root} className="rich-editor" aria-label="Rich Markdown editor" />
+        <div ref={root} className="rich-editor" aria-label={t('Rich Markdown editor')} />
       </div>
     </div>
   );

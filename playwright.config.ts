@@ -7,6 +7,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:1420',
     headless: true,
+    locale: 'en-US',
     viewport: { width: 1280, height: 900 },
     screenshot: 'only-on-failure',
   },

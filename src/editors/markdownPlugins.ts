@@ -2,6 +2,7 @@ import { $prose } from '@milkdown/kit/utils';
 import { Plugin } from '@milkdown/kit/prose/state';
 import type { Node } from '@milkdown/kit/prose/model';
 import { files } from '../files/fileService';
+import { t, errorText, subscribeLocale } from '../i18n/i18n';
 export function safeLink(url: string) {
   try {
     return ['http:', 'https:', 'mailto:'].includes(new URL(url).protocol);
@@ -28,7 +29,7 @@ export function richPlugins(documentPath: () => string | null, onError: (message
     event.preventDefault();
     const url = anchor.getAttribute('href') || '';
     if (safeLink(url)) void files.link(url).catch((e) => onError(String(e)));
-    else onError('이 링크 형식은 차단됩니다.');
+    else onError(t('Unsupported link type.'));
     return true;
   }
   return $prose(
@@ -59,7 +60,9 @@ export function richPlugins(documentPath: () => string | null, onError: (message
               const checkbox = document.createElement('input');
               checkbox.type = 'checkbox';
               checkbox.contentEditable = 'false';
-              checkbox.setAttribute('aria-label', 'Toggle task');
+              const localize = () => checkbox.setAttribute('aria-label', t('Toggle task'));
+              localize();
+              const unsubscribe = subscribeLocale(localize);
               const render = () => {
                 dom.dataset.task = String(node.attrs.checked != null);
                 checkbox.hidden = node.attrs.checked == null;
@@ -81,6 +84,7 @@ export function richPlugins(documentPath: () => string | null, onError: (message
               return {
                 dom,
                 contentDOM,
+                destroy: unsubscribe,
                 update(next) {
                   if (next.type !== node.type) return false;
                   node = next;
@@ -114,9 +118,11 @@ export function richPlugins(documentPath: () => string | null, onError: (message
                 };
                 if (remoteImage(src)) {
                   const label = document.createElement('span');
-                  label.textContent = `Remote image blocked · ${node.attrs.alt || src}`;
+                  label.textContent = t('Remote image blocked · {name}', {
+                    name: node.attrs.alt || src,
+                  });
                   const button = document.createElement('button');
-                  button.textContent = 'Load once';
+                  button.textContent = t('Load once');
                   button.type = 'button';
                   button.onclick = (event) => {
                     event.preventDefault();
@@ -124,9 +130,9 @@ export function richPlugins(documentPath: () => string | null, onError: (message
                   };
                   dom.append(label, button);
                 } else if (/^(?:[a-z][a-z\d+.-]*:|\/|\\)/i.test(src))
-                  dom.textContent = 'Image URL blocked';
+                  dom.textContent = t('Image URL blocked');
                 else {
-                  dom.textContent = node.attrs.alt || 'Local image';
+                  dom.textContent = node.attrs.alt || t('Local image');
                   const path = documentPath();
                   if (path)
                     void files
@@ -134,13 +140,18 @@ export function richPlugins(documentPath: () => string | null, onError: (message
                       .then(show)
                       .catch((e) => {
                         if (version === generation)
-                          dom.textContent = `Local image unavailable: ${String(e)}`;
+                          dom.textContent = t('Local image unavailable: {error}', {
+                            error: errorText(e),
+                          });
                       });
-                  else dom.textContent = 'Save the document to resolve local images';
+                  else dom.textContent = t('Save the document to resolve local images');
                 }
               };
               render();
               refreshImages.add(render);
+              const unsubscribe = subscribeLocale(() => {
+                if (!dom.querySelector('img')) render();
+              });
               return {
                 dom,
                 update(next: Node) {
@@ -158,6 +169,7 @@ export function richPlugins(documentPath: () => string | null, onError: (message
                 stopEvent: () => true,
                 ignoreMutation: () => true,
                 destroy() {
+                  unsubscribe();
                   generation++;
                   refreshImages.delete(render);
                 },

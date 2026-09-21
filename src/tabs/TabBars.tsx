@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { createPortal } from 'react-dom';
 import { tabs, useTabs, type Pane } from './tabStore';
 import { focusEditor } from '../editors/editorCommands';
+import { useI18n } from '../i18n/i18n';
 
 type Drop = {
   pane: Pane;
@@ -17,6 +18,7 @@ export function TabBars({
   onClose: (id: string) => void;
   disabled: boolean;
 }) {
+  const { t } = useI18n();
   const state = useTabs();
   const drag = useRef<{
     id: string;
@@ -198,7 +200,7 @@ export function TabBars({
           className={`tabbar ${state.activePane === pane ? 'pane-focused' : ''} ${drop?.pane === pane && !drop.target && !drop.area ? 'drop-end' : ''}`}
           style={{ gridColumn: pane === 'primary' ? 1 : 3 }}
           data-tab-pane={pane}
-          aria-label={pane === 'primary' ? 'Documents' : 'Right documents'}
+          aria-label={t(pane === 'primary' ? 'Documents' : 'Right documents')}
         >
           {state.tabs
             .filter((tab) => tab.pane === pane)
@@ -220,7 +222,9 @@ export function TabBars({
                 <button
                   title={tab.path || tab.name}
                   aria-pressed={state.selected[pane] === tab.id}
-                  aria-description="탭 표시줄에서 드래그하면 순서가 바뀝니다. 편집 영역의 왼쪽·오른쪽 가장자리에 놓으면 화면이 분할됩니다. Alt+Shift+방향키로도 순서를 바꿀 수 있습니다."
+                  aria-description={t(
+                    'Drag to reorder or drop on an editor edge to split. Alt+Shift+Left/Right also reorders tabs.',
+                  )}
                   draggable={false}
                   onPointerDown={(event) => {
                     if (disabled || event.button !== 0 || drag.current) return;
@@ -298,14 +302,14 @@ export function TabBars({
                   </span>
                   <span className="tab-name">{tab.name}</span>
                   {tab.dirty && (
-                    <span aria-label="Unsaved changes" className="dirty">
+                    <span aria-label={t('Unsaved changes')} className="dirty">
                       ●
                     </span>
                   )}
                 </button>
                 <button
                   className="tab-close"
-                  aria-label={`Close ${tab.name}`}
+                  aria-label={t('Close {name}', { name: tab.name })}
                   disabled={disabled}
                   onClick={() => onClose(tab.id)}
                 >
@@ -315,7 +319,7 @@ export function TabBars({
             ))}
           <button
             className="new-tab"
-            aria-label={pane === 'primary' ? 'New text tab' : 'New text tab in right pane'}
+            aria-label={t(pane === 'primary' ? 'New text tab' : 'New text tab in right pane')}
             onClick={() => {
               tabs.focusPane(pane);
               tabs.new();
@@ -338,9 +342,9 @@ export function TabBars({
             <span>
               {drop.split
                 ? drop.pane === 'primary'
-                  ? '왼쪽으로 분할'
-                  : '오른쪽으로 분할'
-                : '이 영역으로 이동'}
+                  ? t('Split left')
+                  : t('Split right')
+                : t('Move to this pane')}
             </span>
           </div>,
           document.body,

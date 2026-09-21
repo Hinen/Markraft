@@ -71,6 +71,120 @@ async function dragTab(page: Page, source: Locator, target: Locator, after = fal
   await page.mouse.move(to.x + (after ? to.width - 4 : 4), to.y + to.height / 2, { steps: 12 });
   await page.mouse.up();
 }
+for (const [system, language, fileLabel, findLabel, saveLabel, discardLabel, cancelLabel] of [
+  ['en-US', 'en', 'File', 'Find', 'Save', 'Discard', 'Cancel'],
+  ['ko-KR', 'ko', '파일', '찾기', '저장', '저장 안 함', '취소'],
+  ['ja-JP', 'ja', 'ファイル', '検索', '保存', '保存しない', 'キャンセル'],
+  ['fr-FR', 'en', 'File', 'Find', 'Save', 'Discard', 'Cancel'],
+]) {
+  test(`language defaults to the user's locale and keeps close choices correct: ${system}`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ locale: system });
+    const page = await context.newPage();
+    await launch(page, 'original', 'note.txt');
+    await expect(page.locator('html')).toHaveAttribute('lang', language);
+    await expect(page.getByRole('button', { name: fileLabel, exact: true })).toBeVisible();
+    await page.keyboard.press('ControlOrMeta+f');
+    await expect(
+      page.locator('.cm-search').getByRole('textbox', { name: findLabel, exact: true }),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.locator('.cm-content').click();
+    await page.keyboard.press('ControlOrMeta+End');
+    await page.keyboard.type(' edited');
+    await page.keyboard.press('ControlOrMeta+w');
+    await page.getByRole('dialog').getByRole('button', { name: cancelLabel, exact: true }).click();
+    await expect(page.locator('.cm-content')).toHaveText('original edited');
+    await page.keyboard.press('ControlOrMeta+w');
+    await page.getByRole('dialog').getByRole('button', { name: saveLabel, exact: true }).click();
+    await expect(page.locator('.tab')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
+      'original edited',
+    );
+    await page.keyboard.press('ControlOrMeta+n');
+    await page.locator('.cm-content').click();
+    await page.keyboard.type('discard me');
+    await page.keyboard.press('ControlOrMeta+w');
+    await page.getByRole('dialog').getByRole('button', { name: discardLabel, exact: true }).click();
+    await expect(page.locator('.tab')).toHaveCount(0);
+    await context.close();
+  });
+}
+
+test('language switches preserve editor, undo, search, images and other settings; selection persists', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('markraft.settings'))
+      localStorage.setItem(
+        'markraft.settings',
+        JSON.stringify({ theme: 'dark', fontSize: 17, editorFont: 'Consolas', wordWrap: false }),
+      );
+  });
+  await launch(page);
+  await page.locator('.ProseMirror').evaluate((el) => (el.dataset.instance = 'rich'));
+  await page.keyboard.press('ControlOrMeta+f');
+  await page.getByLabel('Find in document').fill('Hello');
+  await page.getByRole('button', { name: '⚙', exact: true }).click();
+  await page.getByLabel('Language', { exact: true }).selectOption('ko');
+  await expect(page.getByRole('heading', { name: '편집기 설정' })).toBeVisible();
+  await page.getByRole('button', { name: '완료', exact: true }).click();
+  await expect(page.getByLabel('문서에서 찾기')).toHaveValue('Hello');
+  await expect(page.getByRole('button', { name: '한 번 불러오기', exact: true })).toBeVisible();
+  await expect(page.locator('.ProseMirror')).toHaveAttribute('data-instance', 'rich');
+  await page.getByRole('button', { name: '소스', exact: true }).click();
+  await page.locator('.cm-content').evaluate((el) => (el.dataset.instance = 'raw'));
+  await page.locator('.cm-content').click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type(' retained');
+  await page.keyboard.press('ControlOrMeta+f');
+  await page.locator('.cm-search').getByLabel('찾기', { exact: true }).fill('retained');
+  await page.getByRole('button', { name: '⚙', exact: true }).click();
+  await page.getByLabel('언어', { exact: true }).selectOption('ja');
+  await expect(page.getByRole('heading', { name: 'エディター設定' })).toBeVisible();
+  await page.getByRole('button', { name: '完了', exact: true }).click();
+  await expect(page.locator('.cm-search').getByLabel('検索', { exact: true })).toHaveValue(
+    'retained',
+  );
+  await expect(page.locator('.cm-content')).toHaveAttribute('data-instance', 'raw');
+  await page.locator('.cm-content').focus();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.locator('.cm-content')).not.toContainText('retained');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('markraft.settings')!));
+  expect(saved).toMatchObject({
+    language: 'ja',
+    theme: 'dark',
+    fontSize: 17,
+    editorFont: 'Consolas',
+    wordWrap: false,
+  });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+  await expect(page.getByRole('button', { name: 'ファイル', exact: true })).toBeVisible();
+});
+
+test('system language changes live, and an explicit language takes precedence', async ({
+  page,
+}) => {
+  await launch(page, '{"bad":}', 'note.json');
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'languages', { configurable: true, value: ['ja-JP'] });
+    window.dispatchEvent(new Event('languagechange'));
+  });
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+  await page.locator('.cm-lint-marker-error').hover();
+  await expect(page.locator('.cm-tooltip-lint')).toContainText('JSON 構文エラー');
+  await page.getByRole('button', { name: '⚙', exact: true }).click();
+  await page.getByLabel('言語', { exact: true }).selectOption('en');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'languages', { configurable: true, value: ['ko-KR'] });
+    window.dispatchEvent(new Event('languagechange'));
+  });
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+});
+
 test('UX audit: focusing a search field in the other pane does not steal its caret or format the document', async ({
   page,
 }) => {
@@ -119,7 +233,7 @@ test('UX audit: close all preserves edits made to an earlier tab while another t
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.type(' keep this');
   await page.evaluate(() => (window as any).__releaseCloseSave());
-  await expect(page.getByRole('alert')).toContainText('새 편집');
+  await expect(page.getByRole('alert')).toContainText('New edits');
   await expect(page.locator('.tab')).toHaveCount(2);
   await expect(page.locator('.cm-content:visible')).toHaveText('original keep this');
   await expect(page.getByLabel('Unsaved changes')).toHaveCount(1);
@@ -193,7 +307,7 @@ test('UX audit: Reload does not discard typing that happens after confirmation',
   await page.keyboard.press('End');
   await page.keyboard.type(' + later');
   await page.evaluate(() => (window as any).__releaseRead());
-  await expect(page.getByRole('alert').filter({ hasText: '새 편집' })).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'New edits' })).toBeVisible();
   await expect(raw).toContainText('original local + later');
   await expect(page.getByLabel('Unsaved changes')).toBeVisible();
 });
@@ -267,7 +381,9 @@ test('UX audit: modal focus is trapped and font size can be typed without forced
   await expect(size).toHaveValue('24');
   await page.getByRole('button', { name: 'Done', exact: true }).focus();
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('dialog').getByRole('combobox')).toBeFocused();
+  await expect(
+    page.getByRole('dialog').getByRole('combobox', { name: 'Language', exact: true }),
+  ).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(page.getByRole('button', { name: 'Done', exact: true })).toBeFocused();
   await page.keyboard.press('Escape');
@@ -770,7 +886,7 @@ test('dirty close can cancel, discard or save', async ({ page }) => {
   await expect(editor).toContainText('changed');
   await page.getByRole('button', { name: 'Close note.txt' }).click();
   await page.getByRole('button', { name: 'Discard', exact: true }).click();
-  await expect(page.getByRole('heading', { name: '열린 문서가 없습니다' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'No documents open' })).toBeVisible();
 });
 test('external changes reload clean tabs and protect local changes', async ({ page }) => {
   await launch(page, 'original', 'note.txt');
@@ -816,7 +932,7 @@ test('JSON opens, folds, reports syntax errors and saves without rewriting numer
   await expect(page.locator('.cm-lintPoint-error')).toHaveCount(0);
   await expect(page.locator('.cm-lint-marker-error')).toHaveCount(0);
   await page.keyboard.press('ControlOrMeta+s');
-  await expect(page.getByText('변경 사항이 없습니다. 파일을 다시 쓰지 않았습니다.')).toBeVisible();
+  await expect(page.getByText('No changes to save.')).toBeVisible();
   expect(await page.evaluate(() => (window as any).__testSaved.length)).toBe(0);
   await editor.click();
   await page.keyboard.press('ControlOrMeta+End');

@@ -76,13 +76,21 @@ pub fn read(path: &Path) -> Result<Document, String> {
     })
 }
 #[tauri::command]
-pub async fn open_dialog(state: tauri::State<'_, FileState>) -> Result<Vec<Document>, String> {
+pub async fn open_dialog(
+    state: tauri::State<'_, FileState>,
+    locale: Option<String>,
+) -> Result<Vec<Document>, String> {
+    let (documents, plain) = match locale.as_deref() {
+        Some("ko") => ("텍스트 문서", "일반 텍스트로 열기"),
+        Some("ja") => ("テキスト文書", "プレーンテキストとして開く"),
+        _ => ("Text documents", "Open as Plain Text"),
+    };
     let Some(files) = rfd::AsyncFileDialog::new()
         .add_filter(
-            "Text documents",
+            documents,
             &["md", "markdown", "txt", "json", "yaml", "yml", "xml"],
         )
-        .add_filter("Open as Plain Text", &["*"])
+        .add_filter(plain, &["*"])
         .pick_files()
         .await
     else {

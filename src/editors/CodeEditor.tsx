@@ -3,7 +3,14 @@ import { basicSetup } from 'codemirror';
 import { EditorState, Compartment } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { indentWithTab, undo, redo, selectAll } from '@codemirror/commands';
-import { openSearchPanel, gotoLine } from '@codemirror/search';
+import {
+  openSearchPanel,
+  closeSearchPanel,
+  searchPanelOpen,
+  getSearchQuery,
+  setSearchQuery,
+  gotoLine,
+} from '@codemirror/search';
 import { markdown } from '@codemirror/lang-markdown';
 import { yaml } from '@codemirror/lang-yaml';
 import { xml } from '@codemirror/lang-xml';
@@ -14,6 +21,7 @@ import type { EditorTab } from '../tabs/tabStore';
 import { tabs } from '../tabs/tabStore';
 import type { Settings } from '../settings/settingsStore';
 import { editorActions } from './editorCommands';
+import { useI18n, editorPhrases } from '../i18n/i18n';
 export function CodeEditor({
   tab,
   settings,
@@ -25,12 +33,16 @@ export function CodeEditor({
   visible: boolean;
   focused: boolean;
 }) {
+  const { t, locale } = useI18n();
   const root = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
   const suppress = useRef(false);
   const wrap = useRef(new Compartment());
   const theme = useRef(new Compartment());
   const lang = useRef(new Compartment());
+  const phrases = useRef(new Compartment());
+  const previousLocale = useRef(locale);
+  const jsonLint = jsonParseLinter();
   const language = () =>
     tab.fileType === 'markdown'
       ? markdown()
@@ -39,7 +51,22 @@ export function CodeEditor({
         : tab.fileType === 'xml'
           ? xml()
           : tab.fileType === 'json'
-            ? [json(), linter(jsonParseLinter()), lintGutter()]
+            ? [
+                json(),
+                linter((view) =>
+                  jsonLint(view).map((diagnostic) => {
+                    const line = view.state.doc.lineAt(diagnostic.from);
+                    return {
+                      ...diagnostic,
+                      message: t(
+                        'Invalid JSON at line {line}, column {column}. Check quotes, commas and brackets.',
+                        { line: line.number, column: diagnostic.from - line.from + 1 },
+                      ),
+                    };
+                  }),
+                ),
+                lintGutter(),
+              ]
             : [];
   const themeExtension = () =>
     EditorView.theme(
@@ -75,6 +102,7 @@ export function CodeEditor({
         extensions: [
           basicSetup,
           syntaxTheme,
+          phrases.current.of(EditorState.phrases.of(editorPhrases())),
           keymap.of([indentWithTab]),
           wrap.current.of(settings.wordWrap ? EditorView.lineWrapping : []),
           theme.current.of(themeExtension()),
@@ -115,14 +143,28 @@ export function CodeEditor({
     }
   }, [tab.text, visible]);
   useEffect(() => {
-    view.current?.dispatch({
+    const editor = view.current;
+    if (!editor) return;
+    const languageChanged = previousLocale.current !== locale;
+    previousLocale.current = locale;
+    const searchOpen = languageChanged && searchPanelOpen(editor.state);
+    const query = getSearchQuery(editor.state);
+    const focusedElement = document.activeElement as HTMLElement | null;
+    if (searchOpen) closeSearchPanel(editor);
+    editor.dispatch({
       effects: [
         wrap.current.reconfigure(settings.wordWrap ? EditorView.lineWrapping : []),
         theme.current.reconfigure(themeExtension()),
         lang.current.reconfigure(language()),
+        phrases.current.reconfigure(EditorState.phrases.of(editorPhrases())),
       ],
     });
-  }, [settings, tab.fileType]);
+    if (searchOpen) {
+      openSearchPanel(editor);
+      editor.dispatch({ effects: setSearchQuery.of(query) });
+      if (focusedElement?.isConnected) focusedElement.focus();
+    }
+  }, [settings, tab.fileType, locale]);
   useEffect(() => {
     const updateTheme = () =>
       view.current?.dispatch({ effects: theme.current.reconfigure(themeExtension()) });
@@ -139,5 +181,11 @@ export function CodeEditor({
       if (focused && !root.current?.contains(document.activeElement)) view.current?.focus();
     }
   }, [visible, focused]);
-  return <div ref={root} className="code-editor" aria-label={`${tab.fileType} source editor`} />;
+  return (
+    <div
+      ref={root}
+      className="code-editor"
+      aria-label={t('{type} source editor', { type: tab.fileType })}
+    />
+  );
 }

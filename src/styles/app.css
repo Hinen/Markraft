@@ -24,6 +24,10 @@
   --syntax-invalid: #a31515;
   color-scheme: light;
 }
+:root:lang(ja) {
+  --ui-font:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Yu Gothic UI', 'Meiryo', sans-serif;
+}
 :root[data-theme='dark'] {
   --surface: #1f1f1f;
   --panel: #181818;
@@ -682,6 +686,8 @@ kbd {
   padding: 20px;
 }
 .dialog {
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   width: min(460px, 100%);
   padding: 27px;
   background: var(--surface);

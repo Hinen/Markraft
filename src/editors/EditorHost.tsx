@@ -3,6 +3,7 @@ import { CodeEditor } from './CodeEditor';
 import { RichEditor } from './RichEditor';
 import { tabs, type EditorTab } from '../tabs/tabStore';
 import type { Settings } from '../settings/settingsStore';
+import { useI18n } from '../i18n/i18n';
 export function EditorHost({
   tab,
   settings,
@@ -16,6 +17,7 @@ export function EditorHost({
   focused: boolean;
   onError: (error: string) => void;
 }) {
+  const { t } = useI18n();
   const [largeAccepted, setLargeAccepted] = useState(tab.text.length < 750_000);
   const [rawSeen, setRawSeen] = useState(tab.fileType !== 'markdown' || tab.mode === 'raw');
   const rich = tab.fileType === 'markdown' && tab.mode === 'rich';
@@ -33,10 +35,10 @@ export function EditorHost({
     >
       {tab.fileType === 'markdown' && !largeAccepted && rich ? (
         <div className="large-warning">
-          <h2>큰 Markdown 문서입니다</h2>
-          <p>Rich 모드는 문서 크기에 따라 느릴 수 있습니다. 원하는 편집 모드를 선택하세요.</p>
-          <button onClick={() => setLargeAccepted(true)}>Open Rich</button>
-          <button onClick={() => tabs.patch(tab.id, { mode: 'raw' })}>Open Raw</button>
+          <h2>{t('Large Markdown document')}</h2>
+          <p>{t('Rich mode may be slow for this document. Choose an editing mode.')}</p>
+          <button onClick={() => setLargeAccepted(true)}>{t('Open Rich')}</button>
+          <button onClick={() => tabs.patch(tab.id, { mode: 'raw' })}>{t('Open Raw')}</button>
         </div>
       ) : null}
       {tab.fileType === 'markdown' && largeAccepted && (

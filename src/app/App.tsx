@@ -11,6 +11,7 @@ import { normalize } from '../files/fileTypes';
 import { EditorHost } from '../editors/EditorHost';
 import { editorActions, focusEditor, type EditorAction } from '../editors/editorCommands';
 import { useSettings, setSettings } from '../settings/settingsStore';
+import { useI18n, errorText } from '../i18n/i18n';
 type Prompt = {
   id: string;
   title: string;
@@ -21,6 +22,7 @@ type Prompt = {
 };
 type MenuItem = [string, string, () => void, boolean?];
 export function App() {
+  const { t, locale } = useI18n();
   const state = useTabs();
   const settings = useSettings();
   const active = state.tabs.find((t) => t.id === state.active);
@@ -43,7 +45,14 @@ export function App() {
         resolve(null);
         return;
       }
-      const request = { id: crypto.randomUUID(), title, message, choices, resolve, input: initial };
+      const request = {
+        id: crypto.randomUUID(),
+        title: t(title),
+        message,
+        choices,
+        resolve,
+        input: initial,
+      };
       setMenu(null);
       setPreferences(false);
       promptRef.current = request;
@@ -79,7 +88,7 @@ export function App() {
   function requestSave(id: string, saveAs = false) {
     if (busy.current) {
       pendingSaves.current.set(id, saveAs || pendingSaves.current.get(id) || false);
-      setNotice('최근 편집 내용의 저장을 기다리고 있습니다.');
+      setNotice(t('Waiting to save the latest changes.'));
       return;
     }
     void guarded(() => save(id, saveAs));
@@ -97,7 +106,7 @@ export function App() {
     if (!latest) return;
     if (latest.text !== text) {
       setError(
-        '파일을 불러오는 동안 새 편집이 생겼습니다. 입력 내용을 유지했습니다. 다시 불러오려면 Reload를 눌러 주세요.',
+        t('New edits arrived while loading. Your edits were kept. Use Reload to try again.'),
       );
       return;
     }
@@ -106,7 +115,7 @@ export function App() {
   async function resolveConflict(tab: EditorTab) {
     const choice = await ask(
       '파일이 외부에서 변경되었습니다',
-      `${tab.name}의 디스크 내용과 편집 중인 내용이 다릅니다.`,
+      t('The disk version of {name} differs from your edits.', { name: tab.name }),
       ['Reload', 'Keep Mine', 'Cancel'],
     );
     if (!choice || choice === 'Cancel') return false;
@@ -134,7 +143,7 @@ export function App() {
         tab = tabs.get().tabs.find((t) => t.id === id)!;
       }
       if (!tab.dirty) {
-        setNotice('변경 사항이 없습니다. 파일을 다시 쓰지 않았습니다.');
+        setNotice(t('No changes to save.'));
         return true;
       }
     }
@@ -150,7 +159,7 @@ export function App() {
     });
     if (!doc) return false;
     tabs.saved(id, doc, submitted);
-    setNotice(`${doc.name} 저장됨`);
+    setNotice(t('Saved {name}', { name: doc.name }));
     return true;
   }
   async function confirmClose(id: string): Promise<boolean> {
@@ -195,7 +204,7 @@ export function App() {
       );
     if (changed) {
       tabs.select(changed.id);
-      setError('닫기를 처리하는 동안 새 편집이 생겼습니다. 모든 탭과 입력 내용을 유지했습니다.');
+      setError(t('New edits arrived while closing. All tabs and edits were kept.'));
       focusEditor();
       return false;
     }
@@ -214,8 +223,8 @@ export function App() {
       const result = await ask(
         action === 'link' ? '링크 편집' : '이미지 삽입',
         action === 'link'
-          ? 'URL을 입력하세요. 선택한 텍스트에 적용합니다. 빈 URL은 링크를 제거합니다.'
-          : '문서 기준 상대 경로 또는 HTTPS URL을 입력하세요.',
+          ? t('Enter a URL for the selected text. An empty URL removes the link.')
+          : t('Enter a path relative to the document or an HTTPS URL.'),
         ['Apply', 'Cancel'],
         '',
       );
@@ -238,6 +247,9 @@ export function App() {
   }
   const handlers = useRef({ closeAll, close, save, requestSave, open, toggle, edit, guarded });
   handlers.current = { closeAll, close, save, requestSave, open, toggle, edit, guarded };
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
   useEffect(() => {
     if (preferences) setFontSizeDraft(String(settings.fontSize));
   }, [preferences]);
@@ -487,13 +499,13 @@ export function App() {
                 }
               }}
             >
-              {name}
+              {t(name)}
             </button>
             {menu === name && (
               <>
                 <button
                   className="menu-backdrop"
-                  aria-label="Close menu"
+                  aria-label={t('Close menu')}
                   onClick={() => setMenu(null)}
                 />
                 <div
@@ -553,8 +565,8 @@ export function App() {
                         action();
                       }}
                     >
-                      <span>{label}</span>
-                      <kbd>{shortcut}</kbd>
+                      <span>{t(label)}</span>
+                      <kbd>{t(shortcut)}</kbd>
                     </button>
                   ))}
                 </div>
@@ -564,13 +576,13 @@ export function App() {
         ))}
         <button
           className="split-toggle"
-          aria-label={state.split ? 'Merge panes' : 'Split view'}
+          aria-label={t(state.split ? 'Merge panes' : 'Split view')}
           title={
             state.split
-              ? '화면 분할 해제'
+              ? t('Merge panes')
               : state.tabs.length < 2
-                ? '문서를 두 개 이상 열면 분할할 수 있습니다'
-                : '화면을 좌우로 나누기'
+                ? t('Open at least two documents to split the view')
+                : t('Split the editor side by side')
           }
           disabled={!state.split && state.tabs.length < 2}
           aria-pressed={state.split}
@@ -580,7 +592,7 @@ export function App() {
             <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" />
             <path d="M8 3v10" stroke="currentColor" />
           </svg>
-          {state.split ? 'Merge' : 'Split'}
+          {t(state.split ? 'Merge' : 'Split')}
         </button>
       </header>
       <TabBars
@@ -603,7 +615,7 @@ export function App() {
                     focusEditor();
                   }}
                 >
-                  Rich
+                  {t('Rich')}
                 </button>
                 <button
                   className={active.mode === 'raw' ? 'selected' : ''}
@@ -613,13 +625,13 @@ export function App() {
                     focusEditor();
                   }}
                 >
-                  Raw
+                  {t('Raw')}
                 </button>
               </div>
               {active.mode === 'rich' && (
                 <div className="format-tools">
                   <select
-                    aria-label="Heading level"
+                    aria-label={t('Heading level')}
                     defaultValue=""
                     onChange={(e) => {
                       void edit('heading', e.target.value);
@@ -627,12 +639,12 @@ export function App() {
                     }}
                   >
                     <option value="" disabled>
-                      Text style
+                      {t('Text style')}
                     </option>
-                    <option value="0">Paragraph</option>
+                    <option value="0">{t('Paragraph')}</option>
                     {[1, 2, 3, 4, 5, 6].map((n) => (
                       <option key={n} value={n}>
-                        Heading {n}
+                        {t('Heading {n}', { n })}
                       </option>
                     ))}
                   </select>
@@ -658,12 +670,12 @@ export function App() {
                   ).map(([label, action]) => (
                     <button
                       key={action}
-                      title={action}
-                      aria-label={action}
+                      title={t(action)}
+                      aria-label={t(action)}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => void edit(action)}
                     >
-                      {label}
+                      {t(label)}
                     </button>
                   ))}
                 </div>
@@ -676,23 +688,25 @@ export function App() {
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => requestSave(active.id)}
           >
-            Save
+            {t('Save')}
           </button>
         </div>
       )}
       {error && (
         <div role="alert" className="banner error">
-          <span>{error}</span>
-          <button aria-label="Dismiss error" onClick={() => setError('')}>
+          <span>{errorText(error)}</span>
+          <button aria-label={t('Dismiss error')} onClick={() => setError('')}>
             ×
           </button>
         </div>
       )}
       {active?.conflict && (
         <div role="alert" className="banner conflict">
-          <span>{active.conflict}</span>
+          <span>{t(active.conflict)}</span>
           {active.conflict.startsWith('파일이 삭제') ? (
-            <button onClick={() => void guarded(() => save(active.id, true))}>Save As…</button>
+            <button onClick={() => void guarded(() => save(active.id, true))}>
+              {t('Save As…')}
+            </button>
           ) : (
             <>
               <button
@@ -700,7 +714,7 @@ export function App() {
                   void guarded(async () => {
                     const choice = await ask(
                       '디스크 내용 다시 불러오기',
-                      '저장하지 않은 편집 내용은 사라집니다.',
+                      t('Unsaved edits will be lost.'),
                       ['Reload', 'Cancel'],
                     );
                     if (choice === 'Reload') {
@@ -711,7 +725,7 @@ export function App() {
                   })
                 }
               >
-                Reload
+                {t('Reload')}
               </button>
               <button
                 onClick={() =>
@@ -728,7 +742,7 @@ export function App() {
                   })
                 }
               >
-                Keep Mine
+                {t('Keep Mine')}
               </button>
             </>
           )}
@@ -736,14 +750,14 @@ export function App() {
       )}
       {!state.tabs.length && (
         <div className="welcome">
-          <h1>열린 문서가 없습니다</h1>
+          <h1>{t('No documents open')}</h1>
           <div className="welcome-actions">
             <button className="primary" onClick={() => void guarded(open)}>
-              Open a file <kbd>Ctrl O</kbd>
+              {t('Open a file')} <kbd>Ctrl O</kbd>
             </button>
-            <button onClick={() => tabs.new('markdown')}>New Markdown</button>
+            <button onClick={() => tabs.new('markdown')}>{t('New Markdown')}</button>
           </div>
-          <p>파일을 여기로 끌어 놓아도 열 수 있습니다.</p>
+          <p>{t('You can also drop files here to open them.')}</p>
         </div>
       )}
       {!!state.tabs.length && (
@@ -762,7 +776,12 @@ export function App() {
         </div>
       )}
       <footer className="statusbar">
-        <span>{notice || (active ? `Ln ${active.line}, Col ${active.column}` : 'Ready')}</span>
+        <span>
+          {notice ||
+            (active
+              ? t('Ln {line}, Col {column}', { line: active.line, column: active.column })
+              : t('Ready'))}
+        </span>
         <div>
           {active && (
             <>
@@ -770,13 +789,15 @@ export function App() {
               <span>{active.lineEnding}</span>
               <span>
                 {active.fileType === 'markdown'
-                  ? `Markdown / ${active.mode === 'rich' ? 'Rich' : 'Raw'}`
+                  ? `Markdown / ${t(active.mode === 'rich' ? 'Rich' : 'Raw')}`
                   : active.fileType.toUpperCase()}
               </span>
-              {active.dirty && <span>Modified</span>}
+              {active.dirty && <span>{t('Modified')}</span>}
             </>
           )}
-          <button onClick={() => setPreferences(true)}>⚙</button>
+          <button title={t('Editor settings')} onClick={() => setPreferences(true)}>
+            ⚙
+          </button>
         </div>
       </footer>
       {prompt && (
@@ -786,7 +807,7 @@ export function App() {
           {prompt.input !== undefined && (
             <input
               autoFocus
-              aria-label="URL or relative path"
+              aria-label={t('URL or relative path')}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -804,7 +825,7 @@ export function App() {
                   answer(choice === 'Cancel' ? null : prompt.input !== undefined ? input : choice)
                 }
               >
-                {choice}
+                {t(choice)}
               </button>
             ))}
           </div>
@@ -812,20 +833,36 @@ export function App() {
       )}
       {preferences && (
         <Modal titleId="settings-title" onCancel={() => setPreferences(false)}>
-          <h2 id="settings-title">Editor settings</h2>
+          <h2 id="settings-title">{t('Editor settings')}</h2>
           <label>
-            Theme
+            {t('Language')}
             <select
-              value={settings.theme}
-              onChange={(e) => setSettings({ theme: e.target.value as typeof settings.theme })}
+              aria-label={t('Language')}
+              value={settings.language}
+              onChange={(e) =>
+                setSettings({ language: e.target.value as typeof settings.language })
+              }
             >
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
+              <option value="system">{t('System')}</option>
+              <option value="en">English</option>
+              <option value="ko">한국어</option>
+              <option value="ja">日本語</option>
             </select>
           </label>
           <label>
-            Font size
+            {t('Theme')}
+            <select
+              aria-label={t('Theme')}
+              value={settings.theme}
+              onChange={(e) => setSettings({ theme: e.target.value as typeof settings.theme })}
+            >
+              <option value="system">{t('System')}</option>
+              <option value="light">{t('Light')}</option>
+              <option value="dark">{t('Dark')}</option>
+            </select>
+          </label>
+          <label>
+            {t('Font size')}
             <input
               type="number"
               min={10}
@@ -848,14 +885,14 @@ export function App() {
             />
           </label>
           <label>
-            Markdown text font
+            {t('Markdown text font')}
             <input
               value={settings.proseFont}
               onChange={(e) => setSettings({ proseFont: e.target.value })}
             />
           </label>
           <label>
-            Code / Raw font
+            {t('Code / Raw font')}
             <input
               value={settings.editorFont}
               onChange={(e) => setSettings({ editorFont: e.target.value })}
@@ -867,11 +904,11 @@ export function App() {
               checked={settings.wordWrap}
               onChange={(e) => setSettings({ wordWrap: e.target.checked })}
             />
-            Word wrap
+            {t('Word wrap')}
           </label>
           <div className="dialog-actions">
             <button className="primary" onClick={() => setPreferences(false)}>
-              Done
+              {t('Done')}
             </button>
           </div>
         </Modal>
