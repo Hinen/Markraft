@@ -1,0 +1,1 @@
+{"identifier":"main-window","description":"Main editor window lifecycle only; file access is authorized in Rust.","windows":["main"],"permissions":["core:default","core:window:allow-destroy"]}

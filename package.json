@@ -1,0 +1,6 @@
+{
+  "name": "markraft", "version": "0.1.0", "private": true, "type": "module",
+  "scripts": { "dev": "vite --host 127.0.0.1", "build": "tsc -b && vite build", "preview": "vite preview", "tauri": "tauri", "test": "vitest run", "test:e2e": "playwright test", "licenses": "node scripts/licenses.mjs" },
+  "dependencies": { "@codemirror/commands": "^6", "@codemirror/lang-markdown": "^6", "@codemirror/lang-xml": "^6", "@codemirror/lang-yaml": "^6", "@codemirror/language": "^6", "@codemirror/search": "^6", "@codemirror/state": "^6", "@codemirror/view": "^6", "@milkdown/kit": "^7", "@tauri-apps/api": "^2", "codemirror": "^6", "react": "^19", "react-dom": "^19" },
+  "devDependencies": { "@playwright/test": "^1", "@tauri-apps/cli": "^2", "@types/node": "^24", "@types/react": "^19", "@types/react-dom": "^19", "@vitejs/plugin-react": "^5", "jsdom": "^26", "typescript": "^5", "vite": "^7", "vitest": "^3" }
+}
