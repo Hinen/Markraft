@@ -770,7 +770,7 @@ test('dirty close can cancel, discard or save', async ({ page }) => {
   await expect(editor).toContainText('changed');
   await page.getByRole('button', { name: 'Close note.txt' }).click();
   await page.getByRole('button', { name: 'Discard', exact: true }).click();
-  await expect(page.getByText('A little space to think.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '열린 문서가 없습니다' })).toBeVisible();
 });
 test('external changes reload clean tabs and protect local changes', async ({ page }) => {
   await launch(page, 'original', 'note.txt');

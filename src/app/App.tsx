@@ -539,9 +539,7 @@ export function App() {
                               'About Markraft',
                               '',
                               () => {
-                                setNotice(
-                                  'Markraft 0.1 · Local-first. No ads, accounts, telemetry or cloud.',
-                                );
+                                setNotice('Markraft 0.1.0');
                               },
                             ],
                           ] as MenuItem[])
@@ -564,7 +562,6 @@ export function App() {
             )}
           </div>
         ))}
-        <span className="local-badge">● Local only</span>
         <button
           className="split-toggle"
           aria-label={state.split ? 'Merge panes' : 'Split view'}
@@ -739,25 +736,14 @@ export function App() {
       )}
       {!state.tabs.length && (
         <div className="welcome">
-          <div className="welcome-mark">
-            M<span>↓</span>
-          </div>
-          <p className="eyebrow">YOUR WORDS. YOUR FILES.</p>
-          <h1>A little space to think.</h1>
-          <p>
-            텍스트는 가볍게, Markdown은 문서처럼.
-            <br />
-            모든 파일은 내 컴퓨터에만 머무릅니다.
-          </p>
+          <h1>열린 문서가 없습니다</h1>
           <div className="welcome-actions">
             <button className="primary" onClick={() => void guarded(open)}>
               Open a file <kbd>Ctrl O</kbd>
             </button>
             <button onClick={() => tabs.new('markdown')}>New Markdown</button>
           </div>
-          <p className="file-types">
-            MD · TXT · JSON · YAML · XML <span>파일을 여기로 끌어 놓으세요</span>
-          </p>
+          <p>파일을 여기로 끌어 놓아도 열 수 있습니다.</p>
         </div>
       )}
       {!!state.tabs.length && (
@@ -883,7 +869,6 @@ export function App() {
             />
             Word wrap
           </label>
-          <p className="muted">설정만 기기에 저장됩니다. 문서 내용은 설정에 저장하지 않습니다.</p>
           <div className="dialog-actions">
             <button className="primary" onClick={() => setPreferences(false)}>
               Done

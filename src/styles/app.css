@@ -121,12 +121,6 @@ main {
   color: var(--surface);
   font-size: 15px;
 }
-.local-badge {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.4px;
-}
 .menu-wrap {
   position: relative;
 }
@@ -253,7 +247,7 @@ kbd {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: 12px;
+  margin-left: auto;
 }
 .editor-workspace {
   display: grid;
@@ -608,37 +602,12 @@ kbd {
   padding: 30px;
   text-align: center;
 }
-.welcome-mark {
-  font-size: 42px;
-  letter-spacing: -4px;
-  font-weight: 750;
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 27px;
-}
-.welcome-mark span {
-  color: var(--accent);
-  font-size: 30px;
-}
-.eyebrow {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--accent);
-  font-weight: 600;
-}
 .welcome h1 {
-  font-size: 32px;
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: -1px;
-  margin: 9px 0 5px;
+  margin: 0;
 }
-.welcome p:not(.eyebrow) {
+.welcome p {
   font-size: 13px;
   color: var(--muted);
   line-height: 1.9;
@@ -661,18 +630,6 @@ kbd {
 .primary {
   background: var(--accent) !important;
   color: var(--surface) !important;
-}
-.file-types {
-  font:
-    10px ui-monospace,
-    monospace !important;
-  letter-spacing: 1px;
-}
-.file-types span {
-  display: block;
-  margin-top: 12px;
-  font: 11px system-ui;
-  letter-spacing: 0;
 }
 .statusbar {
   border-top: 1px solid var(--line);
@@ -770,10 +727,6 @@ kbd {
 .dialog .checkbox-label {
   justify-content: flex-start;
   gap: 8px;
-}
-.muted {
-  color: var(--muted);
-  font-size: 11px !important;
 }
 .large-warning {
   margin: auto;
