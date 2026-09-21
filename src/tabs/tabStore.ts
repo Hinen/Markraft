@@ -90,6 +90,33 @@ export const tabs = {
     if (state.active && state.tabs.length > 1) this.move(state.active, 'secondary');
     else emit();
   },
+  splitWith(id: string, pane: Pane) {
+    const tab = state.tabs.find((t) => t.id === id);
+    if (!tab) return;
+    if (state.split) {
+      if (tab.pane === pane) this.select(id);
+      else this.move(id, pane);
+      return;
+    }
+    const others = state.tabs.filter((t) => t.id !== id);
+    const otherPane: Pane = pane === 'primary' ? 'secondary' : 'primary';
+    const otherSelected =
+      state.active !== id
+        ? state.active
+        : (others[Math.min(state.tabs.indexOf(tab), others.length - 1)]?.id ?? null);
+    state = {
+      ...state,
+      split: true,
+      active: id,
+      activePane: pane,
+      tabs: state.tabs.map((t) => ({ ...t, pane: t.id === id ? pane : otherPane })),
+      selected: {
+        primary: pane === 'primary' ? id : otherSelected,
+        secondary: pane === 'secondary' ? id : otherSelected,
+      },
+    };
+    emit();
+  },
   mergePanes() {
     if (!state.split) return;
     const active = state.active || state.selected.primary || state.selected.secondary;

@@ -599,6 +599,7 @@ export function App() {
                 <div
                   key={pane}
                   className="empty-pane"
+                  data-editor-pane={pane}
                   style={{ gridColumn: pane === 'primary' ? 1 : 3 }}
                   onClick={(event) => {
                     if (event.target === event.currentTarget) tabs.focusPane(pane);

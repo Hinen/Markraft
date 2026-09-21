@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { tabs, useTabs, type Pane } from './tabStore';
 
-type Drop = { pane: Pane; target: string | null; before: boolean };
+type Drop = {
+  pane: Pane;
+  target: string | null;
+  before: boolean;
+  area?: { left: number; top: number; width: number; height: number };
+  split?: boolean;
+};
 export function TabBars({
   onClose,
   disabled,
@@ -29,12 +36,56 @@ export function TabBars({
       }
     };
     window.addEventListener('keydown', cancel);
-    return () => window.removeEventListener('keydown', cancel);
+    const blur = () => {
+      if (drag.current) {
+        suppressClick.current = drag.current.moved;
+        finish();
+      }
+    };
+    window.addEventListener('blur', blur);
+    return () => {
+      window.removeEventListener('keydown', cancel);
+      window.removeEventListener('blur', blur);
+    };
   }, []);
   function destination(x: number, y: number): Drop | null {
     const node = document.elementFromPoint(x, y);
     const bar = node?.closest<HTMLElement>('[data-tab-pane]');
-    if (!bar) return null;
+    if (!bar) {
+      const workspace = node?.closest<HTMLElement>('.editor-workspace');
+      if (!workspace) return null;
+      if (state.split) {
+        const host = node?.closest<HTMLElement>('[data-editor-pane]');
+        if (!host) return null;
+        const { left, top, width, height } = host.getBoundingClientRect();
+        return {
+          pane: host.dataset.editorPane as Pane,
+          target: null,
+          before: false,
+          area: { left, top, width, height },
+        };
+      }
+      const bounds = workspace.getBoundingClientRect();
+      const fraction = (x - bounds.left) / bounds.width;
+      if (fraction > 0.25 && fraction < 0.75) return null;
+      const pane: Pane = fraction <= 0.25 ? 'primary' : 'secondary';
+      const ratio =
+        Number.parseFloat(getComputedStyle(workspace).getPropertyValue('--split-left')) / 100 ||
+        0.5;
+      const leftWidth = bounds.width * ratio - 3;
+      return {
+        pane,
+        target: null,
+        before: false,
+        split: true,
+        area: {
+          left: bounds.left + (pane === 'secondary' ? leftWidth + 6 : 0),
+          top: bounds.top,
+          width: pane === 'primary' ? leftWidth : bounds.width - leftWidth - 6,
+          height: bounds.height,
+        },
+      };
+    }
     const pane = bar.dataset.tabPane as Pane;
     const bounds = bar.getBoundingClientRect();
     if (x < bounds.left + 28) bar.scrollLeft -= 24;
@@ -60,7 +111,12 @@ export function TabBars({
     setDrop((previous) =>
       previous?.pane === next?.pane &&
       previous?.target === next?.target &&
-      previous?.before === next?.before
+      previous?.before === next?.before &&
+      previous?.area?.left === next?.area?.left &&
+      previous?.area?.top === next?.area?.top &&
+      previous?.area?.width === next?.area?.width &&
+      previous?.area?.height === next?.area?.height &&
+      previous?.split === next?.split
         ? previous
         : next,
     );
@@ -70,7 +126,7 @@ export function TabBars({
       {(['primary', ...(state.split ? ['secondary'] : [])] as Pane[]).map((pane) => (
         <nav
           key={pane}
-          className={`tabbar ${state.activePane === pane ? 'pane-focused' : ''} ${drop?.pane === pane && !drop.target ? 'drop-end' : ''}`}
+          className={`tabbar ${state.activePane === pane ? 'pane-focused' : ''} ${drop?.pane === pane && !drop.target && !drop.area ? 'drop-end' : ''}`}
           style={{ gridColumn: pane === 'primary' ? 1 : 3 }}
           data-tab-pane={pane}
           aria-label={pane === 'primary' ? 'Documents' : 'Right documents'}
@@ -86,7 +142,7 @@ export function TabBars({
                 <button
                   title={tab.path || tab.name}
                   aria-pressed={state.selected[pane] === tab.id}
-                  aria-description="드래그하여 탭 순서를 바꾸거나 다른 영역으로 옮깁니다. Alt+Shift+방향키로도 순서를 바꿀 수 있습니다."
+                  aria-description="탭 표시줄에서 드래그하면 순서가 바뀝니다. 편집 영역의 왼쪽·오른쪽 가장자리에 놓으면 화면이 분할됩니다. Alt+Shift+방향키로도 순서를 바꿀 수 있습니다."
                   draggable={false}
                   onPointerDown={(event) => {
                     if (disabled || event.button !== 0 || drag.current) return;
@@ -106,7 +162,9 @@ export function TabBars({
                     if (current?.pointer !== event.pointerId) return;
                     if (current.moved && !disabled) {
                       const target = destination(event.clientX, event.clientY);
-                      if (target) tabs.move(current.id, target.pane, target.target, target.before);
+                      if (target?.area) tabs.splitWith(current.id, target.pane);
+                      else if (target)
+                        tabs.move(current.id, target.pane, target.target, target.before);
                     }
                     finish();
                   }}
@@ -180,6 +238,25 @@ export function TabBars({
           </button>
         </nav>
       ))}
+      {drop?.area &&
+        createPortal(
+          <div
+            className="tab-drop-preview"
+            style={drop.area}
+            role="status"
+            data-drop-side={drop.pane}
+            data-drop-action={drop.split ? 'split' : 'move'}
+          >
+            <span>
+              {drop.split
+                ? drop.pane === 'primary'
+                  ? '왼쪽으로 분할'
+                  : '오른쪽으로 분할'
+                : '이 영역으로 이동'}
+            </span>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

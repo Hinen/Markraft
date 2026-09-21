@@ -68,6 +68,87 @@ async function dragTab(page: Page, source: Locator, target: Locator, after = fal
   await page.mouse.move(to.x + (after ? to.width - 4 : 4), to.y + to.height / 2, { steps: 12 });
   await page.mouse.up();
 }
+for (const side of ['primary', 'secondary'] as const)
+  test(`drag a tab to the ${side} editor edge to split without a button`, async ({ page }) => {
+    await launch(page);
+    const rich = page.locator('.ProseMirror');
+    await rich.locator('h1').click();
+    await page.keyboard.press('End');
+    await page.keyboard.type(' local');
+    await rich.evaluate((el) => (el.dataset.instance = 'before-edge-split'));
+    await page.keyboard.press('ControlOrMeta+o');
+    await expect(page.locator('.document-name')).toHaveText('config.yaml');
+    const source = page.locator('.tab > button[title]').filter({ hasText: 'note.md' }),
+      from = (await source.boundingBox())!;
+    const area = (await page.locator('.editor-workspace').boundingBox())!;
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      area.x + (side === 'primary' ? 30 : area.width - 30),
+      area.y + area.height / 2,
+      { steps: 14 },
+    );
+    await expect(page.locator('.tab-drop-preview')).toHaveAttribute('data-drop-side', side);
+    await expect(page.locator('.tab-drop-preview')).toHaveAttribute('data-drop-action', 'split');
+    await expect(page.getByRole('button', { name: 'Split view', exact: true })).toBeVisible();
+    await expect(page.locator('.editor-host:visible')).toHaveCount(1);
+    if (side === 'secondary')
+      await page.screenshot({ path: 'test-results/drag-split-preview.png' });
+    await page.mouse.up();
+    await expect(page.locator('.tab-drop-preview')).toHaveCount(0);
+    await expect(page.locator('.editor-host:visible')).toHaveCount(2);
+    await expect(page.locator(`.editor-host[data-editor-pane="${side}"]:visible`)).toHaveAttribute(
+      'aria-label',
+      'note.md',
+    );
+    await expect(rich).toHaveAttribute('data-instance', 'before-edge-split');
+    await expect(rich.locator('h1')).toHaveText('한글 제목 local');
+    await rich.focus();
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(rich.locator('h1')).toHaveText('한글 제목');
+    const other = side === 'primary' ? 'secondary' : 'primary';
+    const target = (await page
+      .locator(`.editor-host[data-editor-pane="${other}"]:visible`)
+      .boundingBox())!;
+    const again = (await source.boundingBox())!;
+    await page.mouse.move(again.x + again.width / 2, again.y + again.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 14 });
+    await expect(page.locator('.tab-drop-preview')).toHaveAttribute('data-drop-action', 'move');
+    await page.mouse.up();
+    await expect(page.locator(`.editor-host[data-editor-pane="${other}"]:visible`)).toHaveAttribute(
+      'aria-label',
+      'note.md',
+    );
+    await expect(page.locator('.tab')).toHaveCount(2);
+    await expect(rich).toHaveAttribute('data-instance', 'before-edge-split');
+  });
+test('edge split preview cancels with Escape; center and outside drops do not split', async ({
+  page,
+}) => {
+  await launch(page);
+  const from = (await page.locator('.tab > button[title]').boundingBox())!,
+    area = (await page.locator('.editor-workspace').boundingBox())!;
+  for (const cancel of [true, false]) {
+    await page.mouse.move(from.x + 25, from.y + 15);
+    await page.mouse.down();
+    await page.mouse.move(area.x + area.width - 20, area.y + 80, { steps: 10 });
+    await expect(page.locator('.tab-drop-preview')).toBeVisible();
+    if (cancel) await page.keyboard.press('Escape');
+    else await page.mouse.move(area.x + area.width / 2, area.y + 80, { steps: 8 });
+    await expect(page.locator('.tab-drop-preview')).toHaveCount(0);
+    await page.mouse.up();
+    await expect(page.getByRole('button', { name: 'Split view', exact: true })).toBeVisible();
+    await expect(page.locator('.tab')).toHaveCount(1);
+  }
+  await page.mouse.move(from.x + 25, from.y + 15);
+  await page.mouse.down();
+  await page.mouse.move(area.x + area.width - 20, area.y + 80, { steps: 10 });
+  await page.mouse.move(5, 10, { steps: 10 });
+  await expect(page.locator('.tab-drop-preview')).toHaveCount(0);
+  await page.mouse.up();
+  await expect(page.getByRole('button', { name: 'Split view', exact: true })).toBeVisible();
+});
 test('pointer tab reorder and cancellation retain dirty text, editor instance and undo', async ({
   page,
 }) => {

@@ -96,3 +96,30 @@ it('invalid moves do not remove or duplicate a document', () => {
   expect(tabs.get().tabs.map((t) => t.id)).toEqual([b, a]);
   valid();
 });
+it.each(['primary', 'secondary'] as const)(
+  'dragging an inactive tab to %s splits that tab and keeps the active document opposite',
+  (pane) => {
+    const a = open('a.md'),
+      b = open('b.txt');
+    tabs.edit(a, 'unsaved');
+    tabs.splitWith(a, pane);
+    expect(tabs.get().split).toBe(true);
+    expect(tabs.get().selected[pane]).toBe(a);
+    expect(tabs.get().selected[pane === 'primary' ? 'secondary' : 'primary']).toBe(b);
+    expect(tabs.get().tabs.find((t) => t.id === a)?.text).toBe('unsaved');
+    expect(tabs.get().tabs.find((t) => t.id === a)?.dirty).toBe(true);
+    expect(tabs.get().tabs).toHaveLength(2);
+    valid();
+  },
+);
+it('single-tab drag split keeps one document; an existing pane drop does not create a third pane', () => {
+  const a = open('a.md');
+  tabs.splitWith('missing', 'secondary');
+  expect(tabs.get().split).toBe(false);
+  tabs.splitWith(a, 'secondary');
+  expect(tabs.get().selected).toEqual({ primary: null, secondary: a });
+  tabs.splitWith(a, 'primary');
+  expect(tabs.get().selected).toEqual({ primary: a, secondary: null });
+  expect(tabs.get().tabs).toHaveLength(1);
+  valid();
+});
