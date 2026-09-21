@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
 const npm = [];
@@ -15,11 +16,9 @@ for (const [key, entry] of Object.entries(lock.packages)) {
     scope: entry.dev ? 'development' : 'runtime',
   });
 }
-const cargo =
-  process.env.CARGO ||
-  (fs.existsSync(path.join(process.env.HOME, '.cargo/bin/cargo'))
-    ? path.join(process.env.HOME, '.cargo/bin/cargo')
-    : 'cargo');
+const cargoHome = process.env.CARGO_HOME || path.join(homedir(), '.cargo');
+const cargoBinary = path.join(cargoHome, 'bin', process.platform === 'win32' ? 'cargo.exe' : 'cargo');
+const cargo = process.env.CARGO || (fs.existsSync(cargoBinary) ? cargoBinary : 'cargo');
 const metadata = JSON.parse(
   execFileSync(
     cargo,
