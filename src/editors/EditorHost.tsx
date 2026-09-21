@@ -6,12 +6,14 @@ import type { Settings } from '../settings/settingsStore';
 export function EditorHost({
   tab,
   settings,
-  active,
+  visible,
+  focused,
   onError,
 }: {
   tab: EditorTab;
   settings: Settings;
-  active: boolean;
+  visible: boolean;
+  focused: boolean;
   onError: (error: string) => void;
 }) {
   const [largeAccepted, setLargeAccepted] = useState(tab.text.length < 750_000);
@@ -19,7 +21,16 @@ export function EditorHost({
   const rich = tab.fileType === 'markdown' && tab.mode === 'rich';
   if (!rawSeen && !rich) setRawSeen(true);
   return (
-    <section hidden={!active} className="editor-host" aria-label={tab.name}>
+    <section
+      hidden={!visible}
+      className="editor-host"
+      aria-label={tab.name}
+      data-editor-pane={tab.pane}
+      data-focused={focused}
+      style={{ gridColumn: tab.pane === 'primary' ? 1 : 3, gridRow: 1 }}
+      onPointerDownCapture={() => tabs.select(tab.id)}
+      onFocusCapture={() => tabs.select(tab.id)}
+    >
       {tab.fileType === 'markdown' && !largeAccepted && rich ? (
         <div className="large-warning">
           <h2>큰 Markdown 문서입니다</h2>
@@ -30,12 +41,22 @@ export function EditorHost({
       ) : null}
       {tab.fileType === 'markdown' && largeAccepted && (
         <div className="editor-pane" hidden={!rich}>
-          <RichEditor tab={tab} visible={active && rich} onError={onError} />
+          <RichEditor
+            tab={tab}
+            visible={visible && rich}
+            focused={focused && rich}
+            onError={onError}
+          />
         </div>
       )}
       {rawSeen && (
         <div className="editor-pane" hidden={rich}>
-          <CodeEditor tab={tab} settings={settings} visible={active && !rich} />
+          <CodeEditor
+            tab={tab}
+            settings={settings}
+            visible={visible && !rich}
+            focused={focused && !rich}
+          />
         </div>
       )}
     </section>

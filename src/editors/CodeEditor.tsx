@@ -15,10 +15,12 @@ export function CodeEditor({
   tab,
   settings,
   visible,
+  focused,
 }: {
   tab: EditorTab;
   settings: Settings;
   visible: boolean;
+  focused: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
@@ -113,8 +115,8 @@ export function CodeEditor({
   useEffect(() => {
     if (visible) {
       view.current?.requestMeasure();
-      view.current?.focus();
+      if (focused) view.current?.focus();
     }
-  }, [visible]);
+  }, [visible, focused]);
   return <div ref={root} className="code-editor" aria-label={`${tab.fileType} source editor`} />;
 }

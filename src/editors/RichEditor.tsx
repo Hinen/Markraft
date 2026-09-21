@@ -18,10 +18,12 @@ import { tabs, type EditorTab } from '../tabs/tabStore';
 export function RichEditor({
   tab,
   visible,
+  focused,
   onError,
 }: {
   tab: EditorTab;
   visible: boolean;
+  focused: boolean;
   onError: (error: string) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
@@ -202,8 +204,9 @@ export function RichEditor({
     });
   }, [tab.text, ready, visible]);
   useEffect(() => {
-    if (visible && ready) editor.current?.action((ctx) => ctx.get(editorViewCtx).focus());
-  }, [visible, ready]);
+    if (visible && focused && ready)
+      editor.current?.action((ctx) => ctx.get(editorViewCtx).focus());
+  }, [visible, focused, ready]);
   useEffect(() => {
     if (ready)
       editor.current?.action((ctx) => {

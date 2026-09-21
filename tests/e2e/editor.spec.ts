@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 const markdown =
   '# 한글 제목\n\nHello **world**.\n\n- [ ] parent\n  - [x] child\n\n| Name | Value |\n| --- | --- |\n| HP | 100 |\n\n![Tracker](https://example.com/tracker.png)\n';
@@ -32,22 +32,23 @@ async function launch(page: Page, text = markdown, name = 'note.md') {
               const request = args.request;
               const old = disk.get(request.path);
               if (old && old.revision !== request.revision) throw new Error('CONFLICT');
-              const next = { ...doc, ...request, revision: `v${saved.length + 2}` };
+              const next = { ...(old || doc), ...request, revision: `v${saved.length + 2}` };
               saved.push(next);
               disk.set(request.path, next);
               return next;
             }
-            if (command === 'open_dialog')
-              return [
-                {
-                  path: '/test/config.yaml',
-                  name: 'config.yaml',
-                  text: 'items: []\nname: 한글\n',
-                  encoding: 'UTF-8',
-                  lineEnding: 'LF',
-                  revision: 'yaml1',
-                },
-              ];
+            if (command === 'open_dialog') {
+              const opened = {
+                path: '/test/config.yaml',
+                name: 'config.yaml',
+                text: 'items: []\nname: 한글\n',
+                encoding: 'UTF-8',
+                lineEnding: 'LF',
+                revision: 'yaml1',
+              };
+              disk.set(opened.path, opened);
+              return [opened];
+            }
             if (command === 'local_image') throw new Error('No fixture');
             return null;
           },
@@ -57,7 +58,151 @@ async function launch(page: Page, text = markdown, name = 'note.md') {
     { text, name },
   );
   await page.goto('/');
+  await expect(page.locator('.document-name')).toHaveText(name);
 }
+async function dragTab(page: Page, source: Locator, target: Locator, after = false) {
+  const from = (await source.boundingBox())!;
+  const to = (await target.boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + (after ? to.width - 4 : 4), to.y + to.height / 2, { steps: 12 });
+  await page.mouse.up();
+}
+test('pointer tab reorder and cancellation retain dirty text, editor instance and undo', async ({
+  page,
+}) => {
+  await launch(page);
+  await page.keyboard.press('ControlOrMeta+o');
+  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await page.keyboard.press('ControlOrMeta+n');
+  const content = page.locator('.cm-content:visible');
+  await content.click();
+  await page.keyboard.type('unsaved drag');
+  await content.evaluate((el) => (el.dataset.testInstance = 'original'));
+  const bar = page.getByRole('navigation', { name: 'Documents', exact: true });
+  await dragTab(
+    page,
+    bar.getByRole('button', { name: /Untitled.txt/ }).first(),
+    bar.locator('.tab').first(),
+  );
+  await expect(bar.locator('.tab > button:first-child')).toHaveText([
+    /Untitled.txt/,
+    /note.md/,
+    /config.yaml/,
+  ]);
+  await expect(content).toHaveAttribute('data-test-instance', 'original');
+  await expect(content).toContainText('unsaved drag');
+  await expect(page.getByLabel('Unsaved changes')).toHaveCount(1);
+  const bounds = (await bar.locator('.tab').first().boundingBox())!;
+  await page.mouse.move(bounds.x + 40, bounds.y + 15);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + 180, bounds.y + 120, { steps: 10 });
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(bar.locator('.tab > button:first-child')).toHaveText([
+    /Untitled.txt/,
+    /note.md/,
+    /config.yaml/,
+  ]);
+  await bar.locator('.tab > button:first-child').first().focus();
+  await page.keyboard.press('Alt+Shift+ArrowRight');
+  await expect(bar.locator('.tab > button:first-child')).toHaveText([
+    /note.md/,
+    /Untitled.txt/,
+    /config.yaml/,
+  ]);
+  await content.focus();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(content).not.toContainText('unsaved drag');
+});
+test('split pane focus routes saves correctly and cross-pane drag keeps Rich undo', async ({
+  page,
+}) => {
+  await launch(page);
+  const rich = page.locator('.ProseMirror');
+  await rich.locator('h1').click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' local');
+  await rich.evaluate((el) => (el.dataset.testInstance = 'rich-original'));
+  await page.keyboard.press('ControlOrMeta+o');
+  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await page
+    .getByRole('navigation', { name: 'Documents', exact: true })
+    .getByRole('button', { name: /^M↓.*note.md/ })
+    .click();
+  await page.getByRole('button', { name: 'Split view', exact: true }).click();
+  await expect(page.locator('.editor-host:visible')).toHaveCount(2);
+  const left = page.locator('.editor-host[data-editor-pane="primary"]:visible');
+  const right = page.locator('.editor-host[data-editor-pane="secondary"]:visible');
+  await expect(left).toHaveAttribute('aria-label', 'config.yaml');
+  await expect(right).toHaveAttribute('aria-label', 'note.md');
+  await left.locator('.cm-content').click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type('left: []');
+  await page.keyboard.press('ControlOrMeta+s');
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__testSaved.at(-1)?.path))
+    .toBe('/test/config.yaml');
+  expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toContain('left: []');
+  await expect(page.getByLabel('Unsaved changes')).toHaveCount(1);
+  await right.locator('h1').click();
+  await expect(page.locator('.document-name')).toHaveText('note.md');
+  await dragTab(
+    page,
+    page.getByRole('navigation', { name: 'Right documents' }).locator('.tab > button:first-child'),
+    page.getByRole('navigation', { name: 'Documents', exact: true }).locator('.tab'),
+  );
+  await expect(page.locator('.empty-pane')).toBeVisible();
+  await expect(rich).toHaveAttribute('data-test-instance', 'rich-original');
+  await rich.focus();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(rich.locator('h1')).toHaveText('한글 제목');
+  await page.getByRole('button', { name: 'Merge panes', exact: true }).click();
+  await expect(page.locator('.editor-host:visible')).toHaveCount(1);
+  await expect(page.locator('.tab')).toHaveCount(2);
+  await expect(rich).toHaveAttribute('data-test-instance', 'rich-original');
+});
+test('empty split opens in the chosen pane, divider resizes and dirty close can cancel', async ({
+  page,
+}) => {
+  await launch(page);
+  await page.getByRole('button', { name: 'Split view', exact: true }).click();
+  await expect(page.locator('.empty-pane')).toBeVisible();
+  await page
+    .locator('.empty-pane')
+    .getByRole('button', { name: 'Open a file', exact: true })
+    .click();
+  await expect(page.locator('.editor-host[data-editor-pane="secondary"]:visible')).toHaveAttribute(
+    'aria-label',
+    'config.yaml',
+  );
+  const divider = page.getByRole('separator', { name: 'Resize editor panes' });
+  await divider.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(divider).toHaveAttribute('aria-valuenow', '55');
+  const rect = (await divider.boundingBox())!;
+  await page.mouse.move(rect.x + 3, rect.y + 50);
+  await page.mouse.down();
+  await page.mouse.move(400, rect.y + 50, { steps: 8 });
+  await page.mouse.up();
+  expect(Number(await divider.getAttribute('aria-valuenow'))).toBeLessThan(55);
+  const right = page.locator('.editor-host[data-editor-pane="secondary"]:visible');
+  await right.locator('.cm-content').click();
+  await page.keyboard.press('ControlOrMeta+End');
+  await page.keyboard.type('dirty');
+  await page.getByRole('button', { name: 'Close config.yaml', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(right.locator('.cm-content')).toContainText('dirty');
+  await page.setViewportSize({ width: 700, height: 650 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.screenshot({ path: 'test-results/split-view.png' });
+  await page.getByRole('button', { name: 'Close config.yaml', exact: true }).click();
+  await page.getByRole('button', { name: 'Discard', exact: true }).click();
+  await expect(page.locator('.empty-pane')).toBeVisible();
+  await expect(page.locator('.ProseMirror:visible')).toBeVisible();
+});
 test('QA.md Rich single-space save preserves every unrelated source byte, including after undo and Raw sync', async ({
   page,
 }) => {

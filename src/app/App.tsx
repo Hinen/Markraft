@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { tabs, useTabs, type EditorTab } from '../tabs/tabStore';
+import { TabBars } from '../tabs/TabBars';
+import { PaneDivider } from '../tabs/PaneDivider';
 import { files } from '../files/fileService';
 import { normalize } from '../files/fileTypes';
 import { EditorHost } from '../editors/EditorHost';
@@ -26,6 +28,7 @@ export function App() {
   const [input, setInput] = useState('');
   const [preferences, setPreferences] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
+  const [splitRatio, setSplitRatio] = useState(0.5);
   const busy = useRef(false);
   const [working, setWorking] = useState(false);
   const [systemDark, setSystemDark] = useState(matchMedia('(prefers-color-scheme: dark)').matches);
@@ -329,6 +332,23 @@ export function App() {
   const viewMenu: [string, string, () => void][] = [
     ['Rich / Raw', 'Ctrl+Shift+M', toggle],
     [
+      state.split ? 'Merge panes' : 'Split view',
+      '',
+      () => (state.split ? tabs.mergePanes() : tabs.splitView()),
+    ],
+    ...(state.split
+      ? [
+          [
+            'Move tab to other pane',
+            '',
+            () => {
+              const tab = getActive();
+              if (tab) tabs.move(tab.id, tab.pane === 'primary' ? 'secondary' : 'primary');
+            },
+          ] as [string, string, () => void],
+        ]
+      : []),
+    [
       'Word wrap',
       settings.wordWrap ? 'On' : 'Off',
       () => setSettings({ wordWrap: !settings.wordWrap }),
@@ -336,7 +356,7 @@ export function App() {
     ['Settings…', '', () => setPreferences(true)],
   ];
   return (
-    <main>
+    <main style={{ '--split-left': `${splitRatio * 100}%` } as CSSProperties}>
       <header className="menubar">
         <div className="brand">
           <span className="brand-icon">M</span>Markraft
@@ -393,40 +413,25 @@ export function App() {
           </div>
         ))}
         <span className="local-badge">● Local only</span>
-      </header>
-      <nav className="tabbar" aria-label="Documents">
-        {state.tabs.map((tab) => (
-          <div className={`tab ${state.active === tab.id ? 'active' : ''}`} key={tab.id}>
-            <button title={tab.path || tab.name} onClick={() => tabs.select(tab.id)}>
-              <span className="file-icon">
-                {tab.fileType === 'markdown'
-                  ? 'M↓'
-                  : tab.fileType === 'xml'
-                    ? '‹/›'
-                    : tab.fileType === 'yaml'
-                      ? 'Y'
-                      : 'T'}
-              </span>
-              {tab.name}
-              {tab.dirty && (
-                <span aria-label="Unsaved changes" className="dirty">
-                  ●
-                </span>
-              )}
-            </button>
-            <button
-              className="tab-close"
-              aria-label={`Close ${tab.name}`}
-              onClick={() => void guarded(() => close(tab.id))}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        <button className="new-tab" aria-label="New text tab" onClick={() => tabs.new()}>
-          +
+        <button
+          className="split-toggle"
+          aria-label={state.split ? 'Merge panes' : 'Split view'}
+          title={state.split ? '화면 분할 해제' : '화면을 좌우로 나누기'}
+          disabled={!state.tabs.length}
+          aria-pressed={state.split}
+          onClick={() => (state.split ? tabs.mergePanes() : tabs.splitView())}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" />
+            <path d="M8 3v10" stroke="currentColor" />
+          </svg>
+          {state.split ? 'Merge' : 'Split'}
         </button>
-      </nav>
+      </header>
+      <TabBars
+        onClose={(id) => void guarded(() => close(id))}
+        disabled={working || !!prompt || preferences}
+      />
       {active && (
         <div className="toolbar">
           <span className="document-name">{active.name}</span>
@@ -574,15 +579,55 @@ export function App() {
           </p>
         </div>
       )}
-      {state.tabs.map((tab) => (
-        <EditorHost
-          key={tab.id}
-          tab={tab}
-          settings={settings}
-          active={state.active === tab.id}
-          onError={setError}
-        />
-      ))}
+      {!!state.tabs.length && (
+        <div className={`editor-workspace ${state.split ? 'is-split' : ''}`}>
+          {state.tabs.map((tab) => (
+            <EditorHost
+              key={tab.id}
+              tab={tab}
+              settings={settings}
+              visible={state.selected[tab.pane] === tab.id}
+              focused={state.active === tab.id}
+              onError={setError}
+            />
+          ))}
+          {state.split && <PaneDivider ratio={splitRatio} onResize={setSplitRatio} />}
+          {state.split &&
+            (['primary', 'secondary'] as const)
+              .filter((pane) => !state.selected[pane])
+              .map((pane) => (
+                <div
+                  key={pane}
+                  className="empty-pane"
+                  style={{ gridColumn: pane === 'primary' ? 1 : 3 }}
+                  onClick={(event) => {
+                    if (event.target === event.currentTarget) tabs.focusPane(pane);
+                  }}
+                >
+                  <p>
+                    탭을 이쪽 탭 표시줄로 옮기거나
+                    <br />새 문서를 열어 나란히 편집하세요.
+                  </p>
+                  <button
+                    onClick={() => {
+                      tabs.focusPane(pane);
+                      void guarded(open);
+                    }}
+                  >
+                    Open a file
+                  </button>
+                  <button
+                    onClick={() => {
+                      tabs.focusPane(pane);
+                      tabs.new();
+                    }}
+                  >
+                    New text
+                  </button>
+                </div>
+              ))}
+        </div>
+      )}
       <footer className="statusbar">
         <span>{notice || (active ? `Ln ${active.line}, Col ${active.column}` : 'Ready')}</span>
         <div>

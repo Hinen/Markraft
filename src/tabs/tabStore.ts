@@ -1,8 +1,10 @@
 import { useSyncExternalStore } from 'react';
 import { fileType, normalize, type FileType } from '../files/fileTypes';
 import type { DocumentFile } from '../files/fileService';
+export type Pane = 'primary' | 'secondary';
 export interface EditorTab {
   id: string;
+  pane: Pane;
   path: string | null;
   name: string;
   fileType: FileType;
@@ -18,7 +20,20 @@ export interface EditorTab {
   line: number;
   column: number;
 }
-let state: { tabs: EditorTab[]; active: string | null } = { tabs: [], active: null };
+interface TabState {
+  tabs: EditorTab[];
+  active: string | null;
+  activePane: Pane;
+  split: boolean;
+  selected: Record<Pane, string | null>;
+}
+let state: TabState = {
+  tabs: [],
+  active: null,
+  activePane: 'primary',
+  split: false,
+  selected: { primary: null, secondary: null },
+};
 const listeners = new Set<() => void>();
 function emit() {
   listeners.forEach((fn) => fn());
@@ -32,7 +47,60 @@ export const tabs = {
     };
   },
   select(id: string) {
-    state = { ...state, active: id };
+    const tab = state.tabs.find((t) => t.id === id);
+    if (!tab || state.active === id) return;
+    state = {
+      ...state,
+      active: id,
+      activePane: tab.pane,
+      selected: { ...state.selected, [tab.pane]: id },
+    };
+    emit();
+  },
+  focusPane(pane: Pane) {
+    if ((pane === 'secondary' && !state.split) || state.activePane === pane) return;
+    state = { ...state, activePane: pane, active: state.selected[pane] };
+    emit();
+  },
+  move(id: string, pane: Pane, target: string | null = null, before = true) {
+    const tab = state.tabs.find((t) => t.id === id);
+    if (!tab || (pane === 'secondary' && !state.split) || target === id) return;
+    if (target && !state.tabs.some((t) => t.id === target && t.pane === pane)) return;
+    const oldGroup = state.tabs.filter((t) => t.pane === tab.pane);
+    const remaining = state.tabs.filter((t) => t.id !== id);
+    let index = target ? remaining.findIndex((t) => t.id === target) + (before ? 0 : 1) : -1;
+    if (index < 0) {
+      const lastTab = remaining.filter((t) => t.pane === pane).at(-1);
+      const last = lastTab ? remaining.indexOf(lastTab) : -1;
+      index = last < 0 ? remaining.length : last + 1;
+    }
+    remaining.splice(index, 0, tab.pane === pane ? tab : { ...tab, pane });
+    const selected = { ...state.selected };
+    if (tab.pane !== pane && selected[tab.pane] === id) {
+      const peers = oldGroup.filter((t) => t.id !== id);
+      selected[tab.pane] = peers[Math.min(oldGroup.indexOf(tab), peers.length - 1)]?.id ?? null;
+    }
+    selected[pane] = id;
+    state = { ...state, tabs: remaining, selected, active: id, activePane: pane };
+    emit();
+  },
+  splitView() {
+    if (state.split || !state.tabs.length) return;
+    state = { ...state, split: true };
+    if (state.active && state.tabs.length > 1) this.move(state.active, 'secondary');
+    else emit();
+  },
+  mergePanes() {
+    if (!state.split) return;
+    const active = state.active || state.selected.primary || state.selected.secondary;
+    state = {
+      ...state,
+      split: false,
+      activePane: 'primary',
+      active,
+      tabs: state.tabs.map((t) => (t.pane === 'primary' ? t : { ...t, pane: 'primary' })),
+      selected: { primary: active, secondary: null },
+    };
     emit();
   },
   patch(id: string, patch: Partial<EditorTab>) {
@@ -49,11 +117,14 @@ export const tabs = {
   },
   new(type: FileType = 'text') {
     const id = crypto.randomUUID();
+    const pane = state.activePane;
     state = {
+      ...state,
       tabs: [
         ...state.tabs,
         {
           id,
+          pane,
           path: null,
           name: `Untitled.${type === 'markdown' ? 'md' : 'txt'}`,
           fileType: type,
@@ -70,6 +141,7 @@ export const tabs = {
         },
       ],
       active: id,
+      selected: { ...state.selected, [pane]: id },
     };
     emit();
   },
@@ -80,13 +152,16 @@ export const tabs = {
       return;
     }
     const id = crypto.randomUUID();
+    const pane = state.activePane;
     const text = normalize(doc.text);
     state = {
+      ...state,
       tabs: [
         ...state.tabs,
         {
           ...doc,
           id,
+          pane,
           fileType: fileType(doc.name),
           text,
           savedText: text,
@@ -98,6 +173,7 @@ export const tabs = {
         },
       ],
       active: id,
+      selected: { ...state.selected, [pane]: id },
     };
     emit();
   },
@@ -128,14 +204,25 @@ export const tabs = {
     });
   },
   close(id: string) {
-    const index = state.tabs.findIndex((t) => t.id === id);
+    const tab = state.tabs.find((t) => t.id === id);
+    if (!tab) return;
+    const group = state.tabs.filter((t) => t.pane === tab.pane);
+    const index = group.findIndex((t) => t.id === id);
     const remaining = state.tabs.filter((t) => t.id !== id);
+    const peers = group.filter((t) => t.id !== id);
+    const selected = { ...state.selected };
+    if (selected[tab.pane] === id)
+      selected[tab.pane] = peers[Math.min(index, peers.length - 1)]?.id ?? null;
+    let activePane = state.activePane;
+    if (!selected[activePane]) activePane = activePane === 'primary' ? 'secondary' : 'primary';
+    if (!state.split || !remaining.length) activePane = 'primary';
     state = {
+      ...state,
       tabs: remaining,
-      active:
-        state.active === id
-          ? (remaining[Math.min(index, remaining.length - 1)]?.id ?? null)
-          : state.active,
+      selected,
+      activePane,
+      active: selected[activePane],
+      split: remaining.length ? state.split : false,
     };
     emit();
   },

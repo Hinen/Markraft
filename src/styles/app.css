@@ -162,6 +162,107 @@ kbd {
   border-bottom: 1px solid var(--line);
   padding: 0 8px;
 }
+.tabbars {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex-shrink: 0;
+  background: var(--line);
+}
+.is-split {
+  grid-template-columns: minmax(0, calc(var(--split-left) - 3px)) 6px minmax(0, 1fr);
+}
+.tabbar {
+  min-width: 0;
+}
+.tabbar.pane-focused {
+  box-shadow: inset 0 -2px var(--accent-soft);
+}
+.tab {
+  position: relative;
+}
+.tab > button:first-child {
+  touch-action: none;
+  user-select: none;
+}
+.tab.dragging {
+  opacity: 0.45;
+}
+.tab.drop-before::before,
+.tab.drop-after::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.tab.drop-before::before {
+  left: 0;
+}
+.tab.drop-after::after {
+  right: 0;
+}
+.tabbar.drop-end {
+  box-shadow: inset 0 -3px var(--accent);
+}
+.split-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+}
+.editor-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.editor-workspace.is-split {
+  grid-template-columns: minmax(0, calc(var(--split-left) - 3px)) 6px minmax(0, 1fr);
+}
+.editor-workspace .editor-host {
+  min-width: 0;
+}
+.editor-workspace.is-split .editor-host[data-focused='true'] {
+  box-shadow: inset 0 2px var(--accent-soft);
+}
+.editor-workspace.is-split .rich-editor {
+  padding: 28px 24px 80px;
+}
+.pane-divider {
+  grid-column: 2;
+  grid-row: 1;
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--line);
+}
+.pane-divider:hover,
+.pane-divider:focus-visible {
+  background: var(--accent);
+  outline: none;
+}
+.empty-pane {
+  grid-row: 1;
+  min-width: 0;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.empty-pane button {
+  border: 1px solid var(--line);
+  color: var(--text);
+}
 .tab {
   display: flex;
   align-items: center;
