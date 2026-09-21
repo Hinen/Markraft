@@ -46,4 +46,24 @@ mod tests {
         assert!(atomic_write(&path, b"new").is_err());
         assert_eq!(fs::read(&path).unwrap(), b"old");
     }
+    #[cfg(windows)]
+    #[test]
+    fn locked_destination_preserves_original_and_cleans_temp() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("잠긴 문서.txt");
+        fs::write(&path, "원본\r\n").unwrap();
+        let locked = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+        assert!(atomic_write(&path, "변경".as_bytes()).is_err());
+        drop(locked);
+        assert_eq!(fs::read_to_string(&path).unwrap(), "원본\r\n");
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+        atomic_write(&path, "잠금 해제 후 저장".as_bytes()).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "잠금 해제 후 저장");
+    }
 }
