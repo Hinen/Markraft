@@ -14,7 +14,11 @@
 - Vitest 56/56: 실제 변경 전 QA.md를 fixture로 고정하고 공백 하나의 삽입만 발생하는지 문자열 전체 비교. 문단·제목·표 셀·굵은 글씨·코드·참조 링크·체크박스, 다중 블록 변경, 구조 변경, undo, 기존 16개 fixture 편집 후 의미 보존 검사 포함.
 - Playwright 15/15: QA.md 공백→저장, undo→저장, Raw 수정→Rich 공백→저장 결과를 전체 문자열로 비교. HTML 블록 옆 편집 보존, 원문 보존 오류 시 Save 거부와 Raw 복구(오류 상태 주입), 기존 12개 시나리오 포함. IPC 대역 테스트이며 네이티브 검증과 구분한다.
 - Rust 테스트 11/11, TypeScript/Vite 빌드 통과. `npm run tauri build -- --bundles nsis`로 수정된 Windows x64 설치 파일 생성. 로그·SHA-256은 Git에서 제외된 `Docs/markdown-preservation/`에 기록한다.
-- 수정 버전의 설치 및 실제 WebView2 공백 회귀 검증은 **NOT RUN**: 기존 설치 앱이 정상 종료 요청 후에도 남아 있어 사용자 확인을 기다린다. 미저장 편집을 강제 종료하지 않았다. 재현 스크립트 `Docs/markdown-preservation/native-regression.mjs`는 설치 앱의 QA 복사본에서 공백 입력·undo·Raw↔Rich·재열기 후 기대 바이트와 실제 디스크 파일 전체를 비교한다. 이전 버전의 설치 앱 검증을 이번 수정의 PASS로 사용하지 않는다.
+- 사용자 종료 확인 후 수정본을 NSIS로 설치하고 **실제 WebView2/Rust IPC 회귀 4/4 PASS**를 확인했다. 설치 경로는 `C:\Users\qkrql\AppData\Local\Markraft QA\markraft.exe`다. 재현 스크립트 `Docs/markdown-preservation/native-regression.mjs`가 QA 복사본을 CRLF로 열어 파일 전체 바이트를 비교했다. 결과는 `native-results.json`, `native.log`, `native-1.png`부터 `native-4.png`에 있다. 테스트 후 임시 CDP 포트를 종료했다.
+  - Rich에서 공백 하나 입력·저장: 20,995 → 20,996 bytes. 해당 공백 이외의 바이트가 모두 원본과 동일.
+  - undo·저장: 원본 20,995 bytes와 완전히 동일.
+  - Raw 제목 수정 후 Rich 공백 입력·저장: 의도한 두 변경만 반영된 21,000 bytes와 완전히 동일.
+  - 닫기·재열기·무수정 저장: 21,000 bytes 및 수정 시간 불변.
 - 원래 사용자 QA.md는 `Docs/markdown-preservation/QA.user-saved.md`에 백업했다. 복원 직전에 사용자가 추가로 수정하지 않았음을 바이트 비교한 뒤 자동 재정렬만 복구했다. 사용자가 넣은 공백 하나는 그대로 남기고 커밋에 포함하지 않는다.
 
 Windows IME와 기존 QA의 NOT RUN 항목은 이번 수정으로 통과 처리하지 않는다.
