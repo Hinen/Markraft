@@ -12,6 +12,7 @@ import { EditorHost } from '../editors/EditorHost';
 import { editorActions, focusEditor, type EditorAction } from '../editors/editorCommands';
 import { useSettings, setSettings } from '../settings/settingsStore';
 import { useI18n, errorText } from '../i18n/i18n';
+import { version } from '../../package.json';
 type Prompt = {
   id: string;
   title: string;
@@ -551,7 +552,7 @@ export function App() {
                               'About Markraft',
                               '',
                               () => {
-                                setNotice('Markraft 0.1.0');
+                                setNotice(`Markraft ${version}`);
                               },
                             ],
                           ] as MenuItem[])

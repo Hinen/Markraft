@@ -1,0 +1,120 @@
+name: Build release installers
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: node scripts/check-release-version.mjs
+      - run: npm test
+      - run: npx playwright install chromium
+      - run: npm run test:e2e
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - run: npm run licenses
+      - run: npm run tauri build -- --bundles nsis
+      - name: Verify installation and stage installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $installer = (Resolve-Path "src-tauri/target/release/bundle/nsis/Markraft_${version}_x64-setup.exe").Path
+          $installDirectory = Join-Path $env:RUNNER_TEMP 'Markraft Release QA'
+          $process = Start-Process -FilePath $installer -ArgumentList "/S /D=$installDirectory" -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installation failed: $($process.ExitCode)" }
+          ./scripts/verify-windows-install.ps1 -InstallDirectory $installDirectory
+          $productVersion = (Get-Item (Join-Path $installDirectory 'markraft.exe')).VersionInfo.ProductVersion
+          if ($productVersion -ne $version) { throw "Wrong installed version: $productVersion" }
+          New-Item -ItemType Directory -Path release-assets -Force | Out-Null
+          Copy-Item -LiteralPath $installer -Destination "release-assets/Markraft_${version}_windows_x64_setup.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: release-assets/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: windows-test-results
+          path: test-results/
+
+  macos:
+    name: macOS universal
+    runs-on: macos-latest
+    env:
+      APPLE_SIGNING_IDENTITY: '-'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: node scripts/check-release-version.mjs
+      - run: npm test
+      - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - run: npm run licenses
+      - run: npm run tauri build -- --target universal-apple-darwin --bundles app,dmg
+      - name: Verify universal application and disk image
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          app="src-tauri/target/universal-apple-darwin/release/bundle/macos/Markraft.app"
+          dmg="src-tauri/target/universal-apple-darwin/release/bundle/dmg/Markraft_${version}_universal.dmg"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
+          lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/markraft"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          test -f "$app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
+          hdiutil verify "$dmg"
+          mount="$RUNNER_TEMP/markraft-release-dmg"
+          mkdir -p "$mount"
+          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mount"
+          test -x "$mount/Markraft.app/Contents/MacOS/markraft"
+          hdiutil detach "$mount"
+          printf '# Release smoke test\n' > "$RUNNER_TEMP/markraft-smoke.md"
+          "$app/Contents/MacOS/markraft" "$RUNNER_TEMP/markraft-smoke.md" > "$RUNNER_TEMP/markraft-smoke.log" 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          sleep 5
+          kill -0 "$app_pid"
+          mkdir -p release-assets
+          cp "$dmg" "release-assets/Markraft_${version}_macos_universal.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: release-assets/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: macos-smoke-log
+          path: ${{ runner.temp }}/markraft-smoke.log
