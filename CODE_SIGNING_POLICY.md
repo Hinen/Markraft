@@ -3,7 +3,7 @@
 ## Current status
 
 Markraft has not applied to or been approved by SignPath Foundation. No release
-currently uses SignPath signing. Windows 0.0.1 is unsigned; macOS 0.0.1 is ad-hoc
+currently uses SignPath signing. Windows releases are unsigned; macOS releases are ad-hoc
 signed and not notarized. This policy prepares for a future Windows application.
 
 After approval and activation, the attribution will be:

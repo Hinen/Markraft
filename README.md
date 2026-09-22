@@ -52,12 +52,12 @@ Menus, dialogs, search controls, tooltips, and application messages change witho
 
 ## Get started
 
-Download **[Markraft 0.0.1](https://github.com/Hinen/Markraft/releases/tag/v0.0.1)**:
+Download **[Markraft 0.0.2](https://github.com/Hinen/Markraft/releases/tag/v0.0.2)**:
 
 | Platform | Download |
 | :--- | :--- |
-| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.1/Markraft_0.0.1_windows_x64_setup.exe) |
-| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.1/Markraft_0.0.1_macos_universal.dmg) |
+| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.2/Markraft_0.0.2_windows_x64_setup.exe) |
+| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.2/Markraft_0.0.2_macos_universal.dmg) |
 
 Run the Windows installer, or open the DMG and drag Markraft to Applications. Then open a file with **Ctrl+O**, or drop files into the window. The Windows installer is unsigned; the macOS application is ad-hoc signed and not notarized, so the OS may request approval when opening it.
 

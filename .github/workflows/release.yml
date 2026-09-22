@@ -46,6 +46,7 @@ jobs:
           if ($productVersion -ne $version) { throw "Wrong installed version: $productVersion" }
           New-Item -ItemType Directory -Path release-assets -Force | Out-Null
           Copy-Item -LiteralPath $installer -Destination "release-assets/Markraft_${version}_windows_x64_setup.exe"
+          Copy-Item dist/frontend-components.json release-assets/frontend-components-windows.json
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64
@@ -93,6 +94,9 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
           lipo "$app/Contents/MacOS/markraft" -verify_arch arm64 x86_64
           codesign --verify --deep --strict --verbose=2 "$app"
+          for document in LICENSE DEPENDENCY_REVIEW.md DISTRIBUTION_COMPONENTS.md CODE_SIGNING_POLICY.md PRIVACY.md DEPENDENCIES.md THIRD_PARTY_NOTICES.txt README.md; do
+            cmp "$document" "$app/Contents/Resources/$document"
+          done
           test -f "$app/Contents/Resources/LICENSE"
           test -f "$app/Contents/Resources/DEPENDENCY_REVIEW.md"
           test -f "$app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
@@ -110,6 +114,7 @@ jobs:
           kill -0 "$app_pid"
           mkdir -p release-assets
           cp "$dmg" "release-assets/Markraft_${version}_macos_universal.dmg"
+          cp dist/frontend-components.json release-assets/frontend-components-macos.json
       - uses: actions/upload-artifact@v4
         with:
           name: macos-universal

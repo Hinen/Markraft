@@ -4,6 +4,13 @@ $exe = Join-Path (Resolve-Path -LiteralPath $InstallDirectory).Path 'markraft.ex
 foreach ($file in @($exe, (Join-Path $InstallDirectory 'LICENSE'), (Join-Path $InstallDirectory 'README.md'), (Join-Path $InstallDirectory 'DEPENDENCIES.md'), (Join-Path $InstallDirectory 'DEPENDENCY_REVIEW.md'), (Join-Path $InstallDirectory 'THIRD_PARTY_NOTICES.txt'))) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing installed file: $file" }
 }
+$resourceConfig = Get-Content (Join-Path $PSScriptRoot '../src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json
+foreach ($resource in $resourceConfig.bundle.resources.PSObject.Properties) {
+    $sourceFile = Join-Path $PSScriptRoot "../src-tauri/$($resource.Name)"
+    $installedFile = Join-Path $InstallDirectory $resource.Value
+    if (-not (Test-Path -LiteralPath $installedFile -PathType Leaf)) { throw "Missing resource: $installedFile" }
+    if ((Get-FileHash -LiteralPath $sourceFile).Hash -ne (Get-FileHash -LiteralPath $installedFile).Hash) { throw "Resource mismatch: $installedFile" }
+}
 $command = (Get-Item 'HKCU:\Software\Classes\Markraft.Document\shell\open\command').GetValue('')
 if ($command -ne ('"' + $exe + '" "%1"')) { throw "Incorrect file association command: $command" }
 $capabilities = (Get-ItemProperty 'HKCU:\Software\RegisteredApplications' -Name Markraft).Markraft

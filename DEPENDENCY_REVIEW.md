@@ -60,18 +60,19 @@ publish the corresponding modified source with that release.
 | dtoa-short 0.3.5 | [Source](https://docs.rs/crate/dtoa-short/0.3.5/source/) | [Archive](https://static.crates.io/crates/dtoa-short/dtoa-short-0.3.5.crate) |
 | selectors 0.36.1 | [Source](https://docs.rs/crate/selectors/0.36.1/source/) | [Archive](https://static.crates.io/crates/selectors/selectors-0.36.1.crate) |
 
-## Earlier dependency-policy constraint
+## Current dependency policy
 
-The original implementation specification prohibited all copyleft dependencies,
-including build tools. The current Tauri stack does not meet that stricter
-constraint. This is distinct from choosing MIT for Markraft or meeting upstream
-license obligations. This documentation cleanup does not claim that the constraint
-has been satisfied or that a policy exception has been approved.
+Effective September 22, 2026, following the maintainer's instruction to resolve the
+identified policy conflict: Markraft remains MIT-licensed and permits the current
+Tauri MPL-2.0 dependencies with their upstream notices and source availability.
+This supersedes the original implementation specification's blanket no-copyleft
+restriction. That historical restriction is not a release blocker under this policy.
 
-Keeping the absolute ban would require verified upstream changes or maintained
-patches to both the `dirs-sys` and HTML/CSP dependency paths. Disabling CSP, deleting
-notices, or assuming a downgrade fixes the issue is not an acceptable substitute.
-Any replacement needs security and cross-platform regression verification.
+Changes to MPL-covered files must retain MPL terms and publish corresponding source.
+Future dependency changes require review of their actual license, distribution scope,
+and obligations. Do not remove license text, relabel upstream code as MIT, or infer
+that every component is permissive. See [distribution scope](DISTRIBUTION_COMPONENTS.md)
+for build-only data and system runtimes.
 
 ## Maintaining the inventory
 

@@ -12,10 +12,10 @@ certificate, approval, or signing integration is claimed.
 | Repository and homepage | https://github.com/Hinen/Markraft |
 | Description | Desktop editor for Markdown, text, JSON, YAML, and XML, with rich Markdown editing and draggable split panes. |
 | License | MIT; no commercial dual-license offering |
-| Existing release | https://github.com/Hinen/Markraft/releases/tag/v0.0.1 |
+| Existing release | https://github.com/Hinen/Markraft/releases/tag/v0.0.2 |
 | Requested signing scope | Windows x64 Markraft executable and NSIS installer; final artifact configuration subject to SignPath review |
 | Build workflow | https://github.com/Hinen/Markraft/blob/main/.github/workflows/release.yml |
-| Released build evidence | https://github.com/Hinen/Markraft/actions/runs/35676778646 |
+| Initial 0.0.1 build evidence | https://github.com/Hinen/Markraft/actions/runs/35676778646 |
 | Code signing policy | https://github.com/Hinen/Markraft/blob/main/CODE_SIGNING_POLICY.md |
 | Privacy policy | https://github.com/Hinen/Markraft/blob/main/PRIVACY.md |
 
@@ -39,8 +39,10 @@ and cross-platform dependencies, with no `UNKNOWN` or `UNLICENSED` expressions.
 This is metadata inspection, not a complete binary-level or legal audit. WebView2
 is a proprietary system runtime; its treatment under the system-library exception
 must be confirmed by SignPath. Do not present it as an open-source dependency.
-See [dependency review](../DEPENDENCY_REVIEW.md) for the earlier, stricter internal
-no-copyleft constraint; that policy question has not been resolved by this work.
+The current MPL dependencies are permitted with their obligations; see the
+[dependency policy](../DEPENDENCY_REVIEW.md). [Distribution scope](../DISTRIBUTION_COMPONENTS.md)
+distinguishes build-only CC-BY data and describes the WebView2 system-runtime arrangement.
+New builds emit frontend component evidence. Service acceptance remains with SignPath.
 
 Markraft is a new project first publicly released in September 2026. Do not claim
 an established user base or invent reputation evidence. Acceptance is discretionary.
