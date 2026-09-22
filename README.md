@@ -193,3 +193,25 @@ the copyright and license notice. The software is provided without warranty.
 Third-party components retain their own licenses. See the
 [dependency inventory](DEPENDENCIES.md), [upstream notices](THIRD_PARTY_NOTICES.txt),
 and [dependency review and source links](DEPENDENCY_REVIEW.md).
+
+## Code signing policy
+
+See the [Code signing policy](CODE_SIGNING_POLICY.md) for maintainers, release
+approval, and signing status, and the [Privacy policy](PRIVACY.md) for data handling.
+SignPath has not been applied for or enabled. Existing Windows releases remain
+unsigned; macOS releases are ad-hoc signed and not notarized.
+
+### Installation and removal
+
+The Windows installer writes the application to its installation directory, creates
+uninstall registration and shortcuts as selected in setup, and registers supported
+file types in **Open with**. It does not choose Markraft as your default editor.
+If WebView2 is missing, setup may download and install it from Microsoft.
+Uninstall Markraft through **Settings → Apps → Installed apps**. Documents you saved
+are not application files and should be kept or removed separately; application
+preferences or platform runtime data may remain after uninstalling.
+
+On macOS, drag the application from the DMG to Applications. To uninstall, quit it
+and move Markraft.app to Trash. Documents and application preference/WebView data
+are separate from the app bundle. See the [Privacy policy](PRIVACY.md) for platform
+and network details.
