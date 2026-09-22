@@ -1,5 +1,19 @@
 # 구현 및 검증 기록
 
+## 현재 릴리스 — 0.0.3 (2026-09-22)
+
+[릴리스](https://github.com/Hinen/Markraft/releases/tag/v0.0.3) ·
+[배포 검증](https://github.com/Hinen/Markraft/actions/runs/35692787796) ·
+[최신 회귀 요약](QA_REGRESSIONS.md#003-검증-요약--2026-09-22)
+
+- Windows/macOS 각각 Vitest 148개, Rust 11개 및 fmt/clippy 통과.
+- Windows Playwright 82개 통과. 파일 브리지는 테스트 대역이며 네이티브 저장 대화상자·IME 검증과 구분한다.
+- Windows NSIS 생성·설치, 버전·동봉 문서·48개 확장자 후보 등록 검증 통과. 별도 격리 레지스트리 테스트로 기존 기본 앱 유지와 제거 정리를 확인했다.
+- macOS universal의 arm64/x86_64, ad-hoc 서명, DMG, 동봉 문서, 앱 시작 검증 통과.
+- Windows 실제 IME 조합, Explorer 기본 앱 선택 UI, Windows 10 및 macOS 대화형 편집 전체는 이번 릴리스 검증에 포함되지 않았다.
+
+아래 2026-09-21 기록은 당시의 검증 결과다. 확장자 수·화면 구성·정책 미결정 사항은 당시 기준이며, 최신 동작이나 이번 버전에서 다시 수행한 네이티브 QA를 뜻하지 않는다.
+
 ## Windows 11 x64 — 2026-09-21
 
 **NSIS 생성·설치와 실제 WebView2/Rust 파일 검증을 수행했다. 전체 출시 조건은 미완료다.** 실제 Microsoft Korean IME, Explorer 직접 조작, 일부 네이티브 대화상자 및 정책 결정이 남아 있다. 아래 PASS는 명시한 범위에만 적용한다.

@@ -113,6 +113,8 @@
       "../DEPENDENCY_REVIEW.md": "DEPENDENCY_REVIEW.md",
       "../QA_REGRESSIONS.md": "QA_REGRESSIONS.md",
       "../README.md": "README.md",
+      "../SYNTAX_SUPPORT.md": "SYNTAX_SUPPORT.md",
+      "../QA.md": "QA.md",
       "../assets/icon.svg": "assets/icon.svg",
       "../assets/screenshots/workspace.png": "assets/screenshots/workspace.png"
     }

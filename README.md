@@ -7,7 +7,7 @@
 <p align="center">A desktop editor for Markdown, text, and structured files.</p>
 
 <p align="center">
-  <strong>Markdown</strong> · <strong>Text</strong> · <strong>JSON</strong> · <strong>YAML</strong> · <strong>XML</strong><br>
+  <strong>Markdown</strong> · <strong>Text & logs</strong> · <strong>Configuration & code</strong><br>
   English · 한국어 · 日本語
 </p>
 
@@ -41,6 +41,10 @@ name in the status bar to search and select a language. File names normally
 determine syntax automatically; manual choices stay with the open tab. Save
 dialogs offer the registered formats plus All files. See [syntax support](SYNTAX_SUPPORT.md)
 for detection rules and language-specific capabilities.
+
+File names appear in tabs. Ordinary files have no extra document toolbar;
+Markdown shows only its Rich/Raw switch and, in Rich mode, formatting tools.
+Save through **File → Save** or **Ctrl+S**.
 
 Plain text, logs and Markdown Raw stay quiet while typing. Use **Edit → Complete**
 or **Ctrl+Space** to request suggestions, including words from the current document.
@@ -79,7 +83,11 @@ Download **[Markraft 0.0.3](https://github.com/Hinen/Markraft/releases/tag/v0.0.
 
 Run the Windows installer, or open the DMG and drag Markraft to Applications. Then open a file with **Ctrl+O**, or drop files into the window. The Windows installer is unsigned; the macOS application is ad-hoc signed and not notarized, so the OS may request approval when opening it.
 
-Markraft registers as an **Open with** option for its supported extensions. Choose your default editor in Windows Settings if you want files to open in Markraft automatically.
+Installing or upgrading Markraft registers **48 extensions** as Windows **Open with**
+candidates: syntax-supported formats plus common text files such as `.log`, `.conf`
+and `.config`. This does not change your default editor. Unknown text extensions
+can still be opened from Markraft or by selecting its executable in Windows' app
+picker. Running the development app does not register file associations.
 
 Release installers are built by the [release workflow](.github/workflows/release.yml). Checksums are attached to the release.
 
@@ -123,6 +131,8 @@ Use **Command** in place of **Ctrl** on macOS where supported.
 | Close tab / Close all | `Ctrl+W` / `Ctrl+Shift+W` |
 | Undo / Redo | `Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z` |
 | Find / Replace / Go to line | `Ctrl+F` / `Ctrl+H` / `Ctrl+G` |
+| Request completion in a source editor | `Ctrl+Space` |
+| Select / Accept / Dismiss a completion | `↑` / `↓`, then `Enter` or `Tab`; `Esc` to dismiss |
 | Switch Rich ↔ Raw | `Ctrl+Shift+M` |
 | Bold / Italic in Rich | `Ctrl+B` / `Ctrl+I` |
 | Next / Previous tab in a pane | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
@@ -200,7 +210,14 @@ tests/         Unit tests, Markdown fixtures, and UI regression checks
 
 ### Verification and dependencies
 
-Windows 11 x64 installer and installed-app checks have been run. Windows 10, current macOS behavior, and some Windows IME/Explorer scenarios still need verification; installers are unsigned. See [QA.md](QA.md) and [regression notes](QA_REGRESSIONS.md) for the tested scope.
+The [0.0.3 release run](https://github.com/Hinen/Markraft/actions/runs/35692787796)
+passed on Windows and macOS: 148 unit tests per platform, 82 Windows browser E2E
+scenarios, Rust checks, Windows installation/association checks, and macOS universal
+architecture, signature, DMG and startup checks. Browser scenarios use a file-bridge
+test double; they are not native desktop UI tests. Windows 10, interactive macOS
+editing, actual Windows IME composition and Explorer default-app selection still
+need verification. See [QA.md](QA.md) and [regression notes](QA_REGRESSIONS.md) for
+current coverage and historical installed-app checks.
 
 ## License
 

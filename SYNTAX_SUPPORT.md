@@ -27,6 +27,23 @@ Markdown additionally has a dedicated rich editor and toolbar. Adding another
 language's syntax highlighting requires only a registry entry; adding a new rich
 editing experience requires its own editor integration.
 
+The toolbar appears only for the active Markdown document. It contains the
+Rich/Raw switch and Rich formatting tools, without a duplicate file name or Save
+button. Other file types use the tab name and File menu/keyboard save actions.
+
+## Completion behavior
+
+Document-word suggestions are explicit-only in every source editor: Ctrl+Space or
+Edit > Complete. Plain Text (including logs and unknown extensions) and Markdown
+Raw do not open completion popups while typing. Other syntaxes retain the automatic
+sources provided by their language package, such as HTML tags, CSS properties and
+SQL keywords. Not every grammar provides a completion source.
+
+Arrow keys select candidates; Enter or Tab accepts a selected candidate; Escape
+dismisses. Nothing is selected on opening, so normal Enter/Tab behavior is retained.
+Markdown Rich does not offer these completions. Suggestions run locally, without
+AI calls or a language server; bracket/quote auto-closing is handled by CodeMirror.
+
 ## Available syntaxes
 
 - Plain Text, Markdown, JSON, JSONC, YAML, XML (including SVG/XSD/XSL).
