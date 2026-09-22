@@ -1,6 +1,7 @@
 import { tabs } from '../tabs/tabStore';
 export type EditorAction =
   | 'focus'
+  | 'complete'
   | 'undo'
   | 'redo'
   | 'find'

@@ -17,6 +17,8 @@ export const messages: Record<string, readonly [string, string]> = {
   'New text': ['새 텍스트', '新規テキスト'],
   'New file': ['새 파일', '新規ファイル'],
   'All files': ['모든 파일', 'すべてのファイル'],
+  Complete: ['자동완성', '補完'],
+  Completions: ['자동완성 후보', '補完候補'],
   'Environment (.env)': ['환경변수 (.env)', '環境変数 (.env)'],
   'Invalid JSONC at line {line}, column {column}. Check quotes, commas and brackets.': [
     'JSONC 오류: {line}행 {column}열. 따옴표, 쉼표, 괄호를 확인하세요.',

@@ -454,6 +454,12 @@ export function App() {
   const editMenu: MenuItem[] = [
     ['Undo', 'Ctrl+Z', () => void edit('undo')],
     ['Redo', 'Ctrl+Y', () => void edit('redo')],
+    [
+      'Complete',
+      'Ctrl+Space',
+      () => void edit('complete'),
+      active?.fileType === 'markdown' && active.mode === 'rich',
+    ],
     ['Find', 'Ctrl+F', () => void edit('find')],
     ['Replace', 'Ctrl+H', () => void edit('replace')],
     ['Go to line', 'Ctrl+G', () => void edit('goto')],

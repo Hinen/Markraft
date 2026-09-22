@@ -42,6 +42,16 @@ determine syntax automatically; manual choices stay with the open tab. Save
 dialogs offer the registered formats plus All files. See [syntax support](SYNTAX_SUPPORT.md)
 for detection rules and language-specific capabilities.
 
+Plain text, logs and Markdown Raw stay quiet while typing. Use **Edit → Complete**
+or **Ctrl+Space** to request suggestions, including words from the current document.
+Code syntaxes retain automatic language-provided suggestions such as HTML tags,
+CSS properties and SQL keywords; document-word suggestions are manual in all syntaxes.
+Select with the arrow keys, then accept with **Enter** or **Tab**; **Escape** closes
+the list. No candidate is selected automatically, so ordinary Enter and Tab keep
+their newline/indent behavior. Bracket and quote pairs close automatically.
+These features work locally in source editors (including Markdown Raw mode);
+they do not use AI or a language server.
+
 ### Arrange your workspace
 
 - **Reorder:** drag a tab along the tab bar.

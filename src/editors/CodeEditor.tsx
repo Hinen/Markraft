@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { basicSetup } from 'codemirror';
+import { closeCompletion, startCompletion } from '@codemirror/autocomplete';
+import { completionBehavior, completionExtensions } from './completions';
 import { EditorState, Compartment } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { indentWithTab, undo, redo, selectAll } from '@codemirror/commands';
@@ -38,6 +40,7 @@ export function CodeEditor({
   const wrap = useRef(new Compartment());
   const theme = useRef(new Compartment());
   const lang = useRef(new Compartment());
+  const completion = useRef(new Compartment());
   const phrases = useRef(new Compartment());
   const previousLocale = useRef(locale);
   const themeExtension = () =>
@@ -81,6 +84,8 @@ export function CodeEditor({
         doc: tab.text,
         extensions: [
           basicSetup,
+          completionExtensions,
+          completion.current.of(completionBehavior(tab.fileType)),
           syntaxTheme,
           EditorView.editorAttributes.of((view) => ({
             class: view.state.selection.ranges.some((range) => !range.empty)
@@ -112,6 +117,7 @@ export function CodeEditor({
       if (action === 'find' || action === 'replace') openSearchPanel(editor);
       if (action === 'goto') gotoLine(editor);
       if (action === 'selectAll') selectAll(editor);
+      if (action === 'complete') startCompletion(editor);
     });
     return () => {
       editorActions.delete(`${tab.id}:raw`);
@@ -155,7 +161,13 @@ export function CodeEditor({
     let cancelled = false;
     // Drop the previous grammar/linter immediately; late imports may never
     // overwrite a newer syntax selection or dispatch into an unmounted editor.
-    editor.dispatch({ effects: lang.current.reconfigure([]) });
+    closeCompletion(editor);
+    editor.dispatch({
+      effects: [
+        lang.current.reconfigure([]),
+        completion.current.reconfigure(completionBehavior(tab.fileType)),
+      ],
+    });
     void syntaxRegistry[tab.fileType]
       .extensionsForEditor(t)
       .then((extensions) => {
