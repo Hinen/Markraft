@@ -91,7 +91,7 @@ jobs:
           app="src-tauri/target/universal-apple-darwin/release/bundle/macos/Markraft.app"
           dmg="src-tauri/target/universal-apple-darwin/release/bundle/dmg/Markraft_${version}_universal.dmg"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
-          lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/markraft"
+          lipo "$app/Contents/MacOS/markraft" -verify_arch arm64 x86_64
           codesign --verify --deep --strict --verbose=2 "$app"
           test -f "$app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
           hdiutil verify "$dmg"
@@ -118,3 +118,8 @@ jobs:
         with:
           name: macos-smoke-log
           path: ${{ runner.temp }}/markraft-smoke.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: macos-verification-bundles
+          path: src-tauri/target/universal-apple-darwin/release/bundle/
