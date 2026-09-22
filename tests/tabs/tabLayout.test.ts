@@ -148,13 +148,9 @@ it('untitled names are unambiguous and cycling stays within the focused pane', (
   tabs.new();
   tabs.new();
   tabs.new('markdown');
-  expect(tabs.get().tabs.map((t) => t.name)).toEqual([
-    'Untitled.txt',
-    'Untitled 2.txt',
-    'Untitled.md',
-  ]);
+  expect(tabs.get().tabs.map((t) => t.name)).toEqual(['Untitled', 'Untitled 2', 'Untitled 3']);
   tabs.cycle(1);
-  expect(tabs.get().tabs.find((t) => t.id === tabs.get().active)?.name).toBe('Untitled.txt');
+  expect(tabs.get().tabs.find((t) => t.id === tabs.get().active)?.name).toBe('Untitled');
   tabs.splitView();
   const focused = tabs.get().active;
   tabs.cycle(1);

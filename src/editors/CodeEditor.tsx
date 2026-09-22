@@ -11,11 +11,7 @@ import {
   setSearchQuery,
   gotoLine,
 } from '@codemirror/search';
-import { markdown } from '@codemirror/lang-markdown';
-import { yaml } from '@codemirror/lang-yaml';
-import { xml } from '@codemirror/lang-xml';
-import { json, jsonParseLinter } from '@codemirror/lang-json';
-import { linter, lintGutter } from '@codemirror/lint';
+import { syntaxRegistry } from '../files/syntaxRegistry';
 import { syntaxTheme } from './syntaxTheme';
 import type { EditorTab } from '../tabs/tabStore';
 import { tabs } from '../tabs/tabStore';
@@ -42,32 +38,7 @@ export function CodeEditor({
   const lang = useRef(new Compartment());
   const phrases = useRef(new Compartment());
   const previousLocale = useRef(locale);
-  const jsonLint = jsonParseLinter();
-  const language = () =>
-    tab.fileType === 'markdown'
-      ? markdown()
-      : tab.fileType === 'yaml'
-        ? yaml()
-        : tab.fileType === 'xml'
-          ? xml()
-          : tab.fileType === 'json'
-            ? [
-                json(),
-                linter((view) =>
-                  jsonLint(view).map((diagnostic) => {
-                    const line = view.state.doc.lineAt(diagnostic.from);
-                    return {
-                      ...diagnostic,
-                      message: t(
-                        'Invalid JSON at line {line}, column {column}. Check quotes, commas and brackets.',
-                        { line: line.number, column: diagnostic.from - line.from + 1 },
-                      ),
-                    };
-                  }),
-                ),
-                lintGutter(),
-              ]
-            : [];
+  const language = () => syntaxRegistry[tab.fileType].extensionsForEditor(t);
   const themeExtension = () =>
     EditorView.theme(
       {

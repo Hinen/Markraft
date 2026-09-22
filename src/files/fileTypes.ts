@@ -1,15 +1,11 @@
-export type FileType = 'markdown' | 'text' | 'yaml' | 'xml' | 'json';
+import { syntaxes, type SyntaxId } from './syntaxRegistry';
+export type FileType = SyntaxId;
 export function fileType(name: string): FileType {
-  const ext = name.split('.').pop()?.toLowerCase();
-  return ext === 'md' || ext === 'markdown'
-    ? 'markdown'
-    : ext === 'yaml' || ext === 'yml'
-      ? 'yaml'
-      : ext === 'xml'
-        ? 'xml'
-        : ext === 'json'
-          ? 'json'
-          : 'text';
+  const basename = name.split(/[\\/]/).pop()!.toLowerCase();
+  return (
+    syntaxes.find((syntax) => syntax.extensions.some((ext) => basename.endsWith(`.${ext}`)))?.id ??
+    'text'
+  );
 }
 export function normalize(text: string) {
   return text.replace(/\r\n/g, '\n');

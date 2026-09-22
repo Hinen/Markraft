@@ -13,6 +13,9 @@ describe('file types and preservation', () => {
     ['items.json', 'json'],
     ['ITEMS.JSON', 'json'],
     ['README', 'text'],
+    ['config.toml', 'text'],
+    ['md', 'text'],
+    ['folder.json/README', 'text'],
   ])('%s → %s', (name, type) => expect(fileType(name)).toBe(type));
   it('detects CRLF without losing final newline or whitespace', () => {
     expect(lineEnding('a\r\n')).toBe('CRLF');
@@ -46,5 +49,37 @@ describe('file types and preservation', () => {
     expect(tabs.get().tabs.at(-1)?.dirty).toBe(true);
     expect(tabs.get().tabs.at(-1)?.text).toBe('newer');
     tabs.close(tab.id);
+  });
+  it('detects syntax on save, preserves overrides and never forces an extension', () => {
+    tabs.new();
+    const id = tabs.get().active!;
+    const current = () => tabs.get().tabs.find((tab) => tab.id === id)!;
+    expect(current().name).toBe('Untitled');
+    tabs.edit(id, 'keep this text');
+    const doc = {
+      path: '/config.json',
+      name: 'config.json',
+      text: 'keep this text',
+      encoding: 'UTF-8' as const,
+      lineEnding: 'LF' as const,
+      revision: 'one',
+    };
+    tabs.saved(id, doc, doc.text);
+    expect(current().fileType).toBe('json');
+    tabs.setSyntax(id, 'yaml');
+    expect(current().name).toBe('config.json');
+    expect(current().dirty).toBe(false);
+    tabs.saved(id, { ...doc, name: 'config.xml', path: '/config.xml' }, doc.text);
+    expect(current().fileType).toBe('yaml');
+    tabs.setSyntax(id, null);
+    expect(current().fileType).toBe('xml');
+    tabs.saved(id, { ...doc, name: 'config.toml', path: '/config.toml' }, doc.text);
+    expect(current().fileType).toBe('text');
+    expect(current().name).toBe('config.toml');
+    expect(current().text).toBe(doc.text);
+    tabs.setSyntax(id, 'text');
+    tabs.saved(id, doc, doc.text);
+    expect(current().fileType).toBe('text');
+    tabs.close(id);
   });
 });

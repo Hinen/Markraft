@@ -1,8 +1,10 @@
+import { SyntaxPicker } from './SyntaxPicker';
+import { syntaxRegistry } from '../files/syntaxRegistry';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { isTauri } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { tabs, useTabs, type EditorTab } from '../tabs/tabStore';
+import { tabs, useTabs, type EditorTab, type Pane } from '../tabs/tabStore';
 import { TabBars } from '../tabs/TabBars';
 import { PaneDivider } from '../tabs/PaneDivider';
 import { Modal } from './Modal';
@@ -32,6 +34,7 @@ export function App() {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const promptRef = useRef<Prompt | null>(null);
   const [input, setInput] = useState('');
+  const [syntaxTab, setSyntaxTab] = useState<string | null>(null);
   const [preferences, setPreferences] = useState(false);
   const [fontSizeDraft, setFontSizeDraft] = useState(String(settings.fontSize));
   const [menu, setMenu] = useState<string | null>(null);
@@ -56,6 +59,7 @@ export function App() {
       };
       setMenu(null);
       setPreferences(false);
+      setSyntaxTab(null);
       promptRef.current = request;
       setPrompt(request);
       setInput(initial || '');
@@ -66,6 +70,10 @@ export function App() {
     promptRef.current = null;
     setPrompt(null);
     pending?.resolve(value);
+  }
+  function newFile(pane: Pane = tabs.get().activePane) {
+    tabs.focusPane(pane);
+    tabs.new();
   }
   async function guarded(task: () => Promise<unknown>) {
     if (busy.current) return;
@@ -149,15 +157,18 @@ export function App() {
       }
     }
     const submitted = tab.text;
-    const doc = await files.save({
-      path: tab.path,
-      text: submitted,
-      encoding: tab.encoding,
-      lineEnding: tab.lineEnding,
-      revision: tab.revision,
-      saveAs,
-      suggestedName: tab.name,
-    });
+    const doc = await files.save(
+      {
+        path: tab.path,
+        text: submitted,
+        encoding: tab.encoding,
+        lineEnding: tab.lineEnding,
+        revision: tab.revision,
+        saveAs,
+        suggestedName: tab.name,
+      },
+      tab.fileType,
+    );
     if (!doc) return false;
     tabs.saved(id, doc, submitted);
     setNotice(t('Saved {name}', { name: doc.name }));
@@ -433,9 +444,8 @@ export function App() {
     return () => window.removeEventListener('keydown', keydown, true);
   }, []);
   const fileMenu: MenuItem[] = [
-    ['New text', 'Ctrl+N', () => tabs.new()],
+    ['New file', 'Ctrl+N', () => newFile()],
     ['New Markdown', 'Ctrl+Shift+N', () => tabs.new('markdown')],
-    ['New JSON', '', () => tabs.new('json')],
     ['Open…', 'Ctrl+O', () => void guarded(open)],
     ['Save', 'Ctrl+S', () => active && requestSave(active.id), !active],
     ['Save As…', 'Ctrl+Shift+S', () => active && requestSave(active.id, true), !active],
@@ -597,8 +607,9 @@ export function App() {
         </button>
       </header>
       <TabBars
+        onNew={(pane) => void newFile(pane)}
         onClose={(id) => void guarded(() => close(id))}
-        disabled={working || !!prompt || preferences}
+        disabled={working || !!prompt || preferences || !!syntaxTab}
       />
       {active && (
         <div className="toolbar">
@@ -756,7 +767,7 @@ export function App() {
             <button className="primary" onClick={() => void guarded(open)}>
               {t('Open a file')} <kbd>Ctrl O</kbd>
             </button>
-            <button onClick={() => tabs.new('markdown')}>{t('New Markdown')}</button>
+            <button onClick={() => void newFile()}>{t('New file')}</button>
           </div>
           <p>{t('You can also drop files here to open them.')}</p>
         </div>
@@ -788,11 +799,12 @@ export function App() {
             <>
               <span>{active.encoding}</span>
               <span>{active.lineEnding}</span>
-              <span>
+              <button aria-label={t('Select syntax')} onClick={() => setSyntaxTab(active.id)}>
+                {t(syntaxRegistry[active.fileType].label)}
                 {active.fileType === 'markdown'
-                  ? `Markdown / ${t(active.mode === 'rich' ? 'Rich' : 'Raw')}`
-                  : active.fileType.toUpperCase()}
-              </span>
+                  ? ` / ${t(active.mode === 'rich' ? 'Rich' : 'Raw')}`
+                  : ''}
+              </button>
               {active.dirty && <span>{t('Modified')}</span>}
             </>
           )}
@@ -801,6 +813,16 @@ export function App() {
           </button>
         </div>
       </footer>
+      {syntaxTab && (
+        <SyntaxPicker
+          selected={state.tabs.find((tab) => tab.id === syntaxTab)?.syntaxOverride ?? null}
+          onCancel={() => setSyntaxTab(null)}
+          onSelect={(syntax) => {
+            tabs.setSyntax(syntaxTab, syntax);
+            setSyntaxTab(null);
+          }}
+        />
+      )}
       {prompt && (
         <Modal key={prompt.id} titleId="prompt-title" onCancel={() => answer(null)}>
           <h2 id="prompt-title">{prompt.title}</h2>

@@ -715,9 +715,32 @@ kbd {
 }
 .dialog-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 26px;
+}
+.syntax-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.syntax-options button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  text-align: left;
+}
+.syntax-options button[aria-pressed='true'] {
+  background: var(--hover);
+  font-weight: 600;
+}
+.syntax-options small {
+  color: var(--muted);
 }
 .dialog-actions button {
   border: 1px solid var(--line);

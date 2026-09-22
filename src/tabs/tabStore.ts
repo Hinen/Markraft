@@ -8,6 +8,7 @@ export interface EditorTab {
   path: string | null;
   name: string;
   fileType: FileType;
+  syntaxOverride?: FileType | null;
   text: string;
   savedText: string;
   dirty: boolean;
@@ -165,13 +166,20 @@ export const tabs = {
     if (tab && tab.text !== text)
       this.patch(id, { text, dirty: text !== tab.savedText, richError: undefined });
   },
+  setSyntax(id: string, syntax: FileType | null) {
+    const tab = state.tabs.find((tab) => tab.id === id);
+    if (!tab) return;
+    this.patch(id, {
+      syntaxOverride: syntax,
+      fileType: syntax ?? fileType(tab.name),
+    });
+  },
   new(type: FileType = 'text') {
     const id = crypto.randomUUID();
     const pane = state.activePane;
-    const ext = type === 'markdown' ? 'md' : type === 'text' ? 'txt' : type;
     let number = 1,
-      name = `Untitled.${ext}`;
-    while (state.tabs.some((t) => t.name === name)) name = `Untitled ${++number}.${ext}`;
+      name = `Untitled`;
+    while (state.tabs.some((t) => t.name === name)) name = `Untitled ${++number}`;
     state = {
       ...state,
       tabs: [
@@ -182,6 +190,7 @@ export const tabs = {
           path: null,
           name,
           fileType: type,
+          syntaxOverride: type === 'text' ? null : type,
           text: '',
           savedText: '',
           dirty: false,
@@ -248,7 +257,7 @@ export const tabs = {
     this.patch(id, {
       path: doc.path,
       name: doc.name,
-      fileType: fileType(doc.name),
+      fileType: current.syntaxOverride ?? fileType(doc.name),
       encoding: doc.encoding,
       lineEnding: doc.lineEnding,
       revision: doc.revision,

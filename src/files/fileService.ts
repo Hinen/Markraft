@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
-import { getLocale } from '../i18n/i18n';
+import { getLocale, t } from '../i18n/i18n';
+import { saveFilters } from './dialogFilters';
+import type { SyntaxId } from './syntaxRegistry';
 export interface DocumentFile {
   path: string;
   name: string;
@@ -22,7 +24,10 @@ export const files = {
   pending: () => invoke<({ Ok: DocumentFile } | { Err: string })[]>('take_pending'),
   read: (path: string) => invoke<DocumentFile>('read_document', { path }),
   check: (path: string) => invoke<string>('check_document', { path }),
-  save: (request: SaveRequest) => invoke<DocumentFile | null>('save_document', { request }),
+  save: (request: SaveRequest, syntax: SyntaxId = 'text') =>
+    invoke<DocumentFile | null>('save_document', {
+      request: { ...request, filters: saveFilters(syntax, request.suggestedName, t) },
+    }),
   image: (document: string, source: string) => invoke<string>('local_image', { document, source }),
   link: (url: string) => invoke<void>('open_link', { url }),
 };

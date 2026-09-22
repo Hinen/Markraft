@@ -479,7 +479,7 @@ test('UX audit: overflowing tabs reveal selection, wheel scroll and continuously
   await expect(page.locator('.tab')).toHaveCount(17);
   await bar
     .locator('.tab > button[title]')
-    .filter({ hasText: /^TUntitled 2.txt$/ })
+    .filter({ hasText: /^TUntitled 2$/ })
     .click({ button: 'middle' });
   await expect(page.locator('.tab')).toHaveCount(16);
   await expect(page.locator('.document-name')).toHaveText('note.md');
@@ -570,7 +570,7 @@ test('UX audit: cancel close all leaves every document and discarded draft in pl
   await page.getByRole('button', { name: 'Discard', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.locator('.tab')).toHaveCount(3);
-  await page.locator('.tab > button[title]').filter({ hasText: 'Untitled.txt' }).click();
+  await page.locator('.tab > button[title="Untitled"]').click();
   await expect(page.locator('.cm-content:visible')).toContainText('first draft');
 });
 test('UX audit: new documents have distinct names and Ctrl+Tab cycles within the pane', async ({
@@ -578,13 +578,13 @@ test('UX audit: new documents have distinct names and Ctrl+Tab cycles within the
 }) => {
   await launch(page);
   await page.keyboard.press('ControlOrMeta+n');
-  await expect(page.locator('.document-name')).toHaveText('Untitled.txt');
+  await expect(page.locator('.document-name')).toHaveText('Untitled');
   await page.keyboard.press('ControlOrMeta+n');
-  await expect(page.locator('.document-name')).toHaveText('Untitled 2.txt');
+  await expect(page.locator('.document-name')).toHaveText('Untitled 2');
   await page.keyboard.press('ControlOrMeta+Tab');
   await expect(page.locator('.document-name')).toHaveText('note.md');
   await page.keyboard.press('ControlOrMeta+Shift+Tab');
-  await expect(page.locator('.document-name')).toHaveText('Untitled 2.txt');
+  await expect(page.locator('.document-name')).toHaveText('Untitled 2');
 });
 for (const side of ['primary', 'secondary'] as const)
   test(`drag a tab to the ${side} editor edge to split without a button`, async ({ page }) => {
@@ -684,11 +684,11 @@ test('pointer tab reorder and cancellation retain dirty text, editor instance an
   const bar = page.getByRole('navigation', { name: 'Documents', exact: true });
   await dragTab(
     page,
-    bar.getByRole('button', { name: /Untitled.txt/ }).first(),
+    bar.getByRole('button', { name: /Untitled/ }).first(),
     bar.locator('.tab').first(),
   );
   await expect(bar.locator('.tab > button:first-child')).toHaveText([
-    /Untitled.txt/,
+    /Untitled/,
     /note.md/,
     /config.yaml/,
   ]);
@@ -702,7 +702,7 @@ test('pointer tab reorder and cancellation retain dirty text, editor instance an
   await page.keyboard.press('Escape');
   await page.mouse.up();
   await expect(bar.locator('.tab > button:first-child')).toHaveText([
-    /Untitled.txt/,
+    /Untitled/,
     /note.md/,
     /config.yaml/,
   ]);
@@ -710,7 +710,7 @@ test('pointer tab reorder and cancellation retain dirty text, editor instance an
   await page.keyboard.press('Alt+Shift+ArrowRight');
   await expect(bar.locator('.tab > button:first-child')).toHaveText([
     /note.md/,
-    /Untitled.txt/,
+    /Untitled/,
     /config.yaml/,
   ]);
   await content.focus();
@@ -1002,8 +1002,10 @@ test('JSON opens, folds, reports syntax errors and saves without rewriting numer
     .poll(() => page.evaluate(() => (window as any).__testSaved.at(-1)?.text))
     .toBe(source + ' ');
   await page.getByRole('button', { name: 'File', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'New JSON', exact: true }).click();
-  await expect(page.locator('.document-name')).toHaveText('Untitled.json');
+  await page.getByRole('menuitem', { name: /New file/ }).click();
+  await page.getByRole('button', { name: 'Select syntax', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'JSON .json', exact: true }).click();
+  await expect(page.locator('.document-name')).toHaveText('Untitled');
   await expect(page.getByLabel('json source editor').last()).toBeVisible();
 });
 

@@ -1,3 +1,4 @@
+import { syntaxRegistry } from '../files/syntaxRegistry';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { tabs, useTabs, type Pane } from './tabStore';
@@ -13,9 +14,11 @@ type Drop = {
 };
 export function TabBars({
   onClose,
+  onNew,
   disabled,
 }: {
   onClose: (id: string) => void;
+  onNew: (pane: Pane) => void;
   disabled: boolean;
 }) {
   const { t } = useI18n();
@@ -289,17 +292,7 @@ export function TabBars({
                     if (target) tabs.move(tab.id, pane, target.id, before);
                   }}
                 >
-                  <span className="file-icon">
-                    {tab.fileType === 'markdown'
-                      ? 'M↓'
-                      : tab.fileType === 'xml'
-                        ? '‹/›'
-                        : tab.fileType === 'yaml'
-                          ? 'Y'
-                          : tab.fileType === 'json'
-                            ? '{}'
-                            : 'T'}
-                  </span>
+                  <span className="file-icon">{syntaxRegistry[tab.fileType].icon}</span>
                   <span className="tab-name">{tab.name}</span>
                   {tab.dirty && (
                     <span aria-label={t('Unsaved changes')} className="dirty">
@@ -319,11 +312,8 @@ export function TabBars({
             ))}
           <button
             className="new-tab"
-            aria-label={t(pane === 'primary' ? 'New text tab' : 'New text tab in right pane')}
-            onClick={() => {
-              tabs.focusPane(pane);
-              tabs.new();
-            }}
+            aria-label={t(pane === 'primary' ? 'New file' : 'New file in right pane')}
+            onClick={() => onNew(pane)}
             disabled={disabled}
           >
             +

@@ -28,6 +28,11 @@ pub struct Document {
     pub revision: String,
 }
 #[derive(Deserialize)]
+pub struct DialogFilter {
+    pub name: String,
+    pub extensions: Vec<String>,
+}
+#[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveRequest {
     pub path: Option<String>,
@@ -37,6 +42,8 @@ pub struct SaveRequest {
     pub revision: Option<String>,
     pub save_as: bool,
     pub suggested_name: String,
+    #[serde(default)]
+    pub filters: Vec<DialogFilter>,
 }
 pub fn revision(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
@@ -80,17 +87,13 @@ pub async fn open_dialog(
     state: tauri::State<'_, FileState>,
     locale: Option<String>,
 ) -> Result<Vec<Document>, String> {
-    let (documents, plain) = match locale.as_deref() {
-        Some("ko") => ("텍스트 문서", "일반 텍스트로 열기"),
-        Some("ja") => ("テキスト文書", "プレーンテキストとして開く"),
-        _ => ("Text documents", "Open as Plain Text"),
+    let all_files = match locale.as_deref() {
+        Some("ko") => "모든 파일",
+        Some("ja") => "すべてのファイル",
+        _ => "All files",
     };
     let Some(files) = rfd::AsyncFileDialog::new()
-        .add_filter(
-            documents,
-            &["md", "markdown", "txt", "json", "yaml", "yml", "xml"],
-        )
-        .add_filter(plain, &["*"])
+        .add_filter(all_files, &["*"])
         .pick_files()
         .await
     else {
@@ -125,6 +128,9 @@ pub async fn save_document(
 ) -> Result<Option<Document>, String> {
     let (path, expected) = if request.save_as || request.path.is_none() {
         let mut dialog = rfd::AsyncFileDialog::new().set_file_name(&request.suggested_name);
+        for filter in &request.filters {
+            dialog = dialog.add_filter(&filter.name, &filter.extensions);
+        }
         if let Some(ref path) = request.path {
             if let Some(parent) = Path::new(path).parent() {
                 dialog = dialog.set_directory(parent);
@@ -278,6 +284,7 @@ mod tests {
             revision: None,
             save_as: false,
             suggested_name: "note.txt".into(),
+            filters: vec![],
         }
     }
     #[test]
