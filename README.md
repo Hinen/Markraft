@@ -53,8 +53,7 @@ CSS properties and SQL keywords; document-word suggestions are manual in all syn
 Select with the arrow keys, then accept with **Enter** or **Tab**; **Escape** closes
 the list. No candidate is selected automatically, so ordinary Enter and Tab keep
 their newline/indent behavior. Bracket and quote pairs close automatically.
-These features work locally in source editors (including Markdown Raw mode);
-they do not use AI or a language server.
+These features are available in source editors, including Markdown Raw mode.
 
 ### Arrange your workspace
 
@@ -182,6 +181,18 @@ Verify a Windows installation, using its actual installation directory:
 ```powershell
 ./scripts/verify-windows-install.ps1 -InstallDirectory "$env:LOCALAPPDATA\Markraft"
 ```
+
+Installer appearance (next release): Markraft artwork/icons and English, Korean,
+Japanese pages are configured in `src-tauri/tauri.conf.json`. The OS language is
+used, falling back to English. Welcome, location and completion copy lives in
+`src-tauri/windows/installer-ui.nsh`. Rebuild the committed BMP artwork from the
+existing app icon on Windows with `pwsh -File scripts/installer-art.ps1`.
+Artwork is rendered at 4x resolution (656×1256 sidebar, 600×228 header);
+the Korean installer uses Malgun Gothic instead of the NSIS default Gulim font.
+
+A fresh per-user installation defaults to `%LOCALAPPDATA%\Markraft`. Updates
+reuse the previously selected folder, including a custom QA folder. This is
+intentional: setup does not silently move an existing installation or documents.
 
 </details>
 

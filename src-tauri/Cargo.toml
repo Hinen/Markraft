@@ -1,7 +1,7 @@
 [package]
 name = "markraft"
 version = "0.0.3"
-description = "Local-first text and Markdown editor"
+description = "Text and Markdown editor"
 authors = ["Markraft contributors"]
 edition = "2021"
 license = "MIT"

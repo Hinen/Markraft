@@ -44,7 +44,7 @@ the source commit and build-run link. Never label an unsigned build as signed.
 
 ## Privacy and installation
 
-See the [privacy policy](PRIVACY.md) for local storage, user-requested remote image
+See the [privacy policy](PRIVACY.md) for document/settings storage, user-requested remote image
 loads and links, and WebView2 installation/runtime considerations. Installation,
 file registration, and removal are described in the [README](README.md#installation-and-removal).
 

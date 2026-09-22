@@ -159,12 +159,11 @@ export const messages: Record<string, readonly [string, string]> = {
   ],
   'Load once': ['한 번 불러오기', '一度だけ読み込む'],
   'Image URL blocked': ['차단된 이미지 URL', '画像 URL がブロックされています'],
-  'Local image': ['이미지', '画像'],
-  'Local image unavailable: {error}': [
+  'Image unavailable: {error}': [
     '이미지를 불러올 수 없습니다: {error}',
     '画像を読み込めません: {error}',
   ],
-  'Save the document to resolve local images': [
+  'Save the document to load relative images': [
     '이미지를 불러오려면 문서를 저장하세요',
     '画像を読み込むには文書を保存してください',
   ],

@@ -132,7 +132,7 @@ export function richPlugins(documentPath: () => string | null, onError: (message
                 } else if (/^(?:[a-z][a-z\d+.-]*:|\/|\\)/i.test(src))
                   dom.textContent = t('Image URL blocked');
                 else {
-                  dom.textContent = node.attrs.alt || t('Local image');
+                  dom.textContent = node.attrs.alt || t('Image');
                   const path = documentPath();
                   if (path)
                     void files
@@ -140,11 +140,11 @@ export function richPlugins(documentPath: () => string | null, onError: (message
                       .then(show)
                       .catch((e) => {
                         if (version === generation)
-                          dom.textContent = t('Local image unavailable: {error}', {
+                          dom.textContent = t('Image unavailable: {error}', {
                             error: errorText(e),
                           });
                       });
-                  else dom.textContent = t('Save the document to resolve local images');
+                  else dom.textContent = t('Save the document to load relative images');
                 }
               };
               render();

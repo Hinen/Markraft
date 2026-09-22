@@ -29,7 +29,7 @@
     "targets": [
       "nsis"
     ],
-    "shortDescription": "Local text and rich Markdown editor",
+    "shortDescription": "Text and rich Markdown editor",
     "fileAssociations": [
       {
         "ext": [
@@ -93,7 +93,17 @@
       },
       "nsis": {
         "displayLanguageSelector": false,
-        "installerHooks": "windows/hooks.nsh"
+        "installerHooks": "windows/hooks.nsh",
+        "languages": [
+          "English",
+          "Korean",
+          "Japanese"
+        ],
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "headerImage": "windows/branding/header.bmp",
+        "sidebarImage": "windows/branding/sidebar.bmp",
+        "uninstallerHeaderImage": "windows/branding/header.bmp"
       }
     },
     "icon": [
@@ -117,6 +127,7 @@
       "../QA.md": "QA.md",
       "../assets/icon.svg": "assets/icon.svg",
       "../assets/screenshots/workspace.png": "assets/screenshots/workspace.png"
-    }
+    },
+    "copyright": "Markraft"
   }
 }

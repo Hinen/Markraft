@@ -41,8 +41,8 @@ SQL keywords. Not every grammar provides a completion source.
 
 Arrow keys select candidates; Enter or Tab accepts a selected candidate; Escape
 dismisses. Nothing is selected on opening, so normal Enter/Tab behavior is retained.
-Markdown Rich does not offer these completions. Suggestions run locally, without
-AI calls or a language server; bracket/quote auto-closing is handled by CodeMirror.
+Markdown Rich does not offer these completions. Bracket/quote auto-closing is
+handled by CodeMirror.
 
 ## Available syntaxes
 

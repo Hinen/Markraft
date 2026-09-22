@@ -9,8 +9,7 @@ upload service or include analytics, advertising, account registration, automati
 update checks, or automatic crash-report uploads. Unsaved edits remain in memory;
 there is no crash-recovery service.
 
-Syntax detection, syntax loading and completion run locally. Language grammars
-are packaged with the application; selecting one does not download a model or
+Language grammars are packaged with the application; selecting one does not download a model or
 send document contents to a service. Word suggestions use the current document,
 and this version does not connect to an AI completion service or language server.
 

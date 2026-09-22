@@ -13,6 +13,7 @@ $hooks = $hooks.Replace('"Software\', '"Software\MarkraftAssociationTest\' + $te
 $hooks = $hooks.Replace("  System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'", '')
 Set-Content -LiteralPath (Join-Path $artifactDir 'hooks.nsh') -Value $hooks -Encoding utf8
 Copy-Item -LiteralPath (Join-Path $workspace 'src-tauri\windows\associations.generated.nsh') -Destination $artifactDir
+Copy-Item -LiteralPath (Join-Path $workspace 'src-tauri\windows\installer-ui.nsh') -Destination $artifactDir
 @'
 Unicode true
 RequestExecutionLevel user
