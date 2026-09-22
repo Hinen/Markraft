@@ -23,11 +23,13 @@ export function CodeEditor({
   settings,
   visible,
   focused,
+  onError,
 }: {
   tab: EditorTab;
   settings: Settings;
   visible: boolean;
   focused: boolean;
+  onError: (error: string) => void;
 }) {
   const { t, locale } = useI18n();
   const root = useRef<HTMLDivElement>(null);
@@ -38,7 +40,6 @@ export function CodeEditor({
   const lang = useRef(new Compartment());
   const phrases = useRef(new Compartment());
   const previousLocale = useRef(locale);
-  const language = () => syntaxRegistry[tab.fileType].extensionsForEditor(t);
   const themeExtension = () =>
     EditorView.theme(
       {
@@ -90,7 +91,7 @@ export function CodeEditor({
           keymap.of([indentWithTab]),
           wrap.current.of(settings.wordWrap ? EditorView.lineWrapping : []),
           theme.current.of(themeExtension()),
-          lang.current.of(language()),
+          lang.current.of([]),
           EditorView.updateListener.of((update) => {
             if (update.docChanged && !suppress.current)
               tabs.edit(tab.id, update.state.doc.toString());
@@ -139,7 +140,6 @@ export function CodeEditor({
       effects: [
         wrap.current.reconfigure(settings.wordWrap ? EditorView.lineWrapping : []),
         theme.current.reconfigure(themeExtension()),
-        lang.current.reconfigure(language()),
         phrases.current.reconfigure(EditorState.phrases.of(editorPhrases())),
       ],
     });
@@ -148,7 +148,34 @@ export function CodeEditor({
       editor.dispatch({ effects: setSearchQuery.of(query) });
       if (focusedElement?.isConnected) focusedElement.focus();
     }
-  }, [settings, tab.fileType, locale]);
+  }, [settings, locale]);
+  useEffect(() => {
+    const editor = view.current;
+    if (!editor) return;
+    let cancelled = false;
+    // Drop the previous grammar/linter immediately; late imports may never
+    // overwrite a newer syntax selection or dispatch into an unmounted editor.
+    editor.dispatch({ effects: lang.current.reconfigure([]) });
+    void syntaxRegistry[tab.fileType]
+      .extensionsForEditor(t)
+      .then((extensions) => {
+        if (!cancelled) editor.dispatch({ effects: lang.current.reconfigure(extensions) });
+      })
+      .catch(() => {
+        if (!cancelled)
+          onError(
+            t(
+              'Could not load {syntax}. Your text is still editable. Select another syntax and try again.',
+              {
+                syntax: syntaxRegistry[tab.fileType].label,
+              },
+            ),
+          );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tab.fileType, locale]);
   useEffect(() => {
     const updateTheme = () =>
       view.current?.dispatch({ effects: theme.current.reconfigure(themeExtension()) });

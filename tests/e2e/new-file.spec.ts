@@ -13,10 +13,17 @@ test('new files are extensionless in welcome, tab bar, shortcut and split pane',
   await expect(page.locator('.document-name')).toHaveText('Untitled 2');
   await page.keyboard.press('ControlOrMeta+n');
   await expect(page.locator('.document-name')).toHaveText('Untitled 3');
+  await page.getByRole('button', { name: 'File', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: /New Markdown/ })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: /New file/ }).click();
+  await expect(page.locator('.document-name')).toHaveText('Untitled 4');
+  await expect(page.getByRole('button', { name: 'Select syntax', exact: true })).toHaveText(
+    'Plain Text',
+  );
   await page.getByRole('button', { name: 'Split view', exact: true }).click();
   await page.getByRole('button', { name: 'New file in right pane', exact: true }).click();
   await expect(page.locator('[data-tab-pane="secondary"] .tab-name').last()).toHaveText(
-    'Untitled 4',
+    'Untitled 5',
   );
 });
 

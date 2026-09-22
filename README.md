@@ -28,11 +28,19 @@ Write directly in a Markdown document, switch to its source, or keep a configura
 | Format | Editor |
 | :--- | :--- |
 | **Markdown** · `.md`, `.markdown` | Rich editing with headings, lists, tasks, tables, links, and images. Switch to **Raw** to edit the source. |
-| **JSON** · `.json` | Syntax colors, folding, indentation, and syntax diagnostics. Create a file with **File → New JSON**. |
+| **JSON / JSONC** · `.json`, `.jsonc` | Syntax colors and syntax diagnostics. JSONC allows comments and trailing commas. |
 | **YAML / XML** · `.yaml`, `.yml`, `.xml` | Syntax colors, folding, and indentation. |
 | **Text** · `.txt` | Plain-text editing, search and replace, line navigation, and multiple cursors. |
 
 All source editors use colors matched to the light or dark theme. Markdown prose and code have separate font settings.
+
+Also available: **TOML, INI, .env, CSV, TSV, HTML, CSS, SQL, JavaScript/JSX,
+TypeScript/TSX, Python, Shell/Bash and PowerShell**. Grammars load on demand.
+Create an extensionless document with **New file** or **+**, then click the syntax
+name in the status bar to search and select a language. File names normally
+determine syntax automatically; manual choices stay with the open tab. Save
+dialogs offer the registered formats plus All files. See [syntax support](SYNTAX_SUPPORT.md)
+for detection rules and language-specific capabilities.
 
 ### Arrange your workspace
 
@@ -99,7 +107,7 @@ Use **Command** in place of **Ctrl** on macOS where supported.
 
 | Action | Shortcut |
 | :--- | :--- |
-| New text / Markdown | `Ctrl+N` / `Ctrl+Shift+N` |
+| New file | `Ctrl+N` |
 | Open | `Ctrl+O` |
 | Save / Save As | `Ctrl+S` / `Ctrl+Shift+S` |
 | Close tab / Close all | `Ctrl+W` / `Ctrl+Shift+W` |

@@ -13,7 +13,7 @@ describe('file types and preservation', () => {
     ['items.json', 'json'],
     ['ITEMS.JSON', 'json'],
     ['README', 'text'],
-    ['config.toml', 'text'],
+    ['config.custom', 'text'],
     ['md', 'text'],
     ['folder.json/README', 'text'],
   ])('%s → %s', (name, type) => expect(fileType(name)).toBe(type));
@@ -73,9 +73,9 @@ describe('file types and preservation', () => {
     expect(current().fileType).toBe('yaml');
     tabs.setSyntax(id, null);
     expect(current().fileType).toBe('xml');
-    tabs.saved(id, { ...doc, name: 'config.toml', path: '/config.toml' }, doc.text);
+    tabs.saved(id, { ...doc, name: 'config.custom', path: '/config.custom' }, doc.text);
     expect(current().fileType).toBe('text');
-    expect(current().name).toBe('config.toml');
+    expect(current().name).toBe('config.custom');
     expect(current().text).toBe(doc.text);
     tabs.setSyntax(id, 'text');
     tabs.saved(id, doc, doc.text);

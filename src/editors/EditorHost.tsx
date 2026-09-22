@@ -54,6 +54,7 @@ export function EditorHost({
       {rawSeen && (
         <div className="editor-pane" hidden={rich}>
           <CodeEditor
+            onError={onError}
             tab={tab}
             settings={settings}
             visible={visible && !rich}

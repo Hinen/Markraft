@@ -563,7 +563,12 @@ test('UX audit: cancel close all leaves every document and discarded draft in pl
   await page.keyboard.press('ControlOrMeta+n');
   await page.locator('.cm-content:visible').click();
   await page.keyboard.type('first draft');
-  await page.keyboard.press('ControlOrMeta+Shift+n');
+  await page.keyboard.press('ControlOrMeta+n');
+  await page.getByRole('button', { name: 'Select syntax', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Markdown .md, .markdown', exact: true })
+    .click();
   await page.locator('.ProseMirror:visible').click();
   await page.keyboard.type('second draft');
   await page.keyboard.press('ControlOrMeta+Shift+w');

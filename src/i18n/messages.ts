@@ -17,6 +17,15 @@ export const messages: Record<string, readonly [string, string]> = {
   'New text': ['새 텍스트', '新規テキスト'],
   'New file': ['새 파일', '新規ファイル'],
   'All files': ['모든 파일', 'すべてのファイル'],
+  'Environment (.env)': ['환경변수 (.env)', '環境変数 (.env)'],
+  'Invalid JSONC at line {line}, column {column}. Check quotes, commas and brackets.': [
+    'JSONC 오류: {line}행 {column}열. 따옴표, 쉼표, 괄호를 확인하세요.',
+    'JSONC エラー: {line} 行 {column} 列。引用符、コンマ、括弧を確認してください。',
+  ],
+  'Could not load {syntax}. Your text is still editable. Select another syntax and try again.': [
+    '{syntax} 문법을 불러오지 못했습니다. 텍스트는 계속 편집할 수 있습니다. 다른 문법을 선택한 뒤 다시 시도하세요.',
+    '{syntax} の構文を読み込めませんでした。テキストは引き続き編集できます。別の構文を選択してから再試行してください。',
+  ],
   'Plain Text': ['일반 텍스트', 'プレーンテキスト'],
   'Select syntax': ['문법 선택', '構文を選択'],
   'Search syntax': ['문법 또는 확장자 검색', '構文または拡張子を検索'],
@@ -27,7 +36,6 @@ export const messages: Record<string, readonly [string, string]> = {
   ],
   'New file in right pane': ['오른쪽 영역에 새 파일', '右ペインに新規ファイル'],
   'Choose a file format.': ['파일 형식을 선택하세요.', 'ファイル形式を選択してください。'],
-  'New Markdown': ['새 Markdown', '新規 Markdown'],
   'New JSON': ['새 JSON', '新規 JSON'],
   'Open…': ['열기…', '開く…'],
   'Open a file': ['파일 열기', 'ファイルを開く'],

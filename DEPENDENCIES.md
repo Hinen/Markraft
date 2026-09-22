@@ -21,9 +21,12 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | @codemirror/lang-javascript | 6.2.5 | MIT |
 | @codemirror/lang-json | 6.0.2 | MIT |
 | @codemirror/lang-markdown | 6.5.2 | MIT |
+| @codemirror/lang-python | 6.2.1 | MIT |
+| @codemirror/lang-sql | 6.10.0 | MIT |
 | @codemirror/lang-xml | 6.1.0 | MIT |
 | @codemirror/lang-yaml | 6.1.3 | MIT |
 | @codemirror/language | 6.12.4 | MIT |
+| @codemirror/legacy-modes | 6.5.4 | MIT |
 | @codemirror/lint | 6.9.7 | MIT |
 | @codemirror/search | 6.7.2 | MIT |
 | @codemirror/state | 6.7.5 | MIT |
@@ -40,6 +43,7 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | @lezer/json | 1.0.3 | MIT |
 | @lezer/lr | 1.4.10 | MIT |
 | @lezer/markdown | 1.7.2 | MIT |
+| @lezer/python | 1.1.19 | MIT |
 | @lezer/xml | 1.0.6 | MIT |
 | @lezer/yaml | 1.0.4 | MIT |
 | @marijn/find-cluster-break | 1.0.4 | MIT |
@@ -101,6 +105,7 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | estree-walker | 2.0.2 | MIT |
 | extend | 3.0.2 | MIT |
 | is-plain-obj | 4.1.0 | MIT |
+| jsonc-parser | 3.3.1 | MIT |
 | lodash-es | 4.18.1 | MIT |
 | longest-streak | 3.1.0 | MIT |
 | magic-string | 0.30.21 | MIT |

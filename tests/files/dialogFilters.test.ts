@@ -16,7 +16,7 @@ describe('save dialog filters', () => {
   );
   it('respects existing extensions and keeps unknown extensions unrestricted', () => {
     expect(saveFilters('xml', 'config.YML', (s) => s)[0].extensions).toEqual(['yaml', 'yml']);
-    expect(saveFilters('text', 'config.toml', (s) => s)[0].extensions).toEqual(['*']);
+    expect(saveFilters('text', 'config.custom', (s) => s)[0].extensions).toEqual(['*']);
     expect(saveFilters('text', '.gitignore', (s) => s)[0].extensions).toEqual(['*']);
   });
   it('localizes filter labels', () => {

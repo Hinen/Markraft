@@ -1,4 +1,4 @@
-import { syntaxes, type SyntaxId } from './syntaxRegistry';
+import { syntaxes, detectSyntax, type SyntaxId } from './syntaxRegistry';
 
 export function saveFilters(syntax: SyntaxId, name: string, translate: (key: string) => string) {
   const filters = syntaxes.map((entry) => ({
@@ -7,11 +7,13 @@ export function saveFilters(syntax: SyntaxId, name: string, translate: (key: str
     extensions: [...entry.extensions],
   }));
   const all = { name: translate('All files'), extensions: ['*'] };
-  const matching = syntaxes.find((entry) =>
-    entry.extensions.some((ext) => name.toLowerCase().endsWith(`.${ext}`)),
+  const matching = detectSyntax(name);
+  const hasKnownExtension = matching?.extensions.some((ext) =>
+    name.toLowerCase().endsWith(`.${ext}`),
   );
-  // Existing file names take precedence. Keep arbitrary extensions intact.
-  if (name.includes('.') && !matching) return [all, ...filters];
+  // Preserve dotfiles, special names and unknown extensions without appending suffixes.
+  if ((matching && !hasKnownExtension) || (name.includes('.') && !matching))
+    return [all, ...filters];
   const preferred = matching?.id ?? syntax;
   return [
     ...filters.filter((entry) => entry.id === preferred),

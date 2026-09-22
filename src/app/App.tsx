@@ -411,9 +411,9 @@ export function App() {
         event.preventDefault();
         tabs.cycle(key === 'pageup' || (key === 'tab' && event.shiftKey) ? -1 : 1);
         focusEditor();
-      } else if (key === 'n') {
+      } else if (key === 'n' && !event.shiftKey) {
         event.preventDefault();
-        tabs.new(event.shiftKey ? 'markdown' : 'text');
+        tabs.new();
       } else if (key === 'o') {
         event.preventDefault();
         void handler.guarded(handler.open);
@@ -445,7 +445,6 @@ export function App() {
   }, []);
   const fileMenu: MenuItem[] = [
     ['New file', 'Ctrl+N', () => newFile()],
-    ['New Markdown', 'Ctrl+Shift+N', () => tabs.new('markdown')],
     ['Open…', 'Ctrl+O', () => void guarded(open)],
     ['Save', 'Ctrl+S', () => active && requestSave(active.id), !active],
     ['Save As…', 'Ctrl+Shift+S', () => active && requestSave(active.id, true), !active],

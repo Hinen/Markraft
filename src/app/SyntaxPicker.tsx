@@ -14,12 +14,18 @@ export function SyntaxPicker({
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
-  const matches = syntaxes.filter((syntax) =>
-    [t(syntax.label), syntax.id, ...syntax.extensions]
-      .join(' ')
-      .toLowerCase()
-      .includes(query.trim().toLowerCase().replace(/^\./, '')),
+  const search = query.trim().toLowerCase().replace(/^\./, '');
+  const exact = syntaxes.filter(
+    (syntax) => syntax.id === search || syntax.extensions.includes(search),
   );
+  const matches = exact.length
+    ? exact
+    : syntaxes.filter((syntax) =>
+        [t(syntax.label), syntax.id, ...syntax.extensions, ...(syntax.fileNames ?? [])]
+          .join(' ')
+          .toLowerCase()
+          .includes(search),
+      );
   return (
     <Modal titleId="syntax-title" onCancel={onCancel}>
       <h2 id="syntax-title">{t('Select syntax')}</h2>
