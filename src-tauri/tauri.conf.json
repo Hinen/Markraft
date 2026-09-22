@@ -26,17 +26,71 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "shortDescription": "Local text and rich Markdown editor",
     "fileAssociations": [
       {
-        "ext": ["md", "markdown", "txt", "json", "yaml", "yml", "xml"],
+        "ext": [
+          "bash",
+          "cfg",
+          "cjs",
+          "code-workspace",
+          "conf",
+          "config",
+          "css",
+          "csv",
+          "cts",
+          "diff",
+          "env",
+          "htm",
+          "html",
+          "ini",
+          "js",
+          "json",
+          "jsonc",
+          "jsx",
+          "log",
+          "lst",
+          "markdown",
+          "md",
+          "mjs",
+          "mts",
+          "patch",
+          "properties",
+          "ps1",
+          "psd1",
+          "psm1",
+          "py",
+          "pyi",
+          "pyw",
+          "sh",
+          "sql",
+          "svg",
+          "tab",
+          "text",
+          "toml",
+          "ts",
+          "tsv",
+          "tsx",
+          "txt",
+          "xml",
+          "xsd",
+          "xsl",
+          "yaml",
+          "yml",
+          "zsh"
+        ],
         "name": "Markraft.Document",
         "role": "Editor"
       }
     ],
     "windows": {
-      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
       "nsis": {
         "displayLanguageSelector": false,
         "installerHooks": "windows/hooks.nsh"

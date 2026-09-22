@@ -32,6 +32,9 @@ jobs:
       - run: npm audit
       - run: npm run licenses
       - run: npm run tauri build -- --bundles nsis
+      - name: Verify association hooks preserve defaults and uninstall cleanly
+        shell: pwsh
+        run: ./scripts/test-file-associations.ps1
       - name: Verify per-user install with spaces in the path
         shell: pwsh
         run: |

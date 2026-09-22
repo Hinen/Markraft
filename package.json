@@ -6,9 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "npm run associations && tsc -b && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "pretauri": "npm run associations",
+    "associations": "node --experimental-strip-types scripts/file-associations.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "licenses": "node scripts/licenses.mjs",

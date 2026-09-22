@@ -45,3 +45,26 @@ the source or converts its numbers. Syntax support for the other added formats
 provides highlighting, with folding/completion where the underlying language
 package supports them. It does not execute code or provide compiler/type/schema
 checking. CSV/TSV currently have a source editor, not a table preview.
+
+## Windows Open With integration
+
+`npm run associations` derives installer extensions from the syntax registry plus
+the small `plainTextExtensions` list in `scripts/file-associations.mjs` (`log`,
+`conf`, `config`, `text`, `diff`, `patch`, `lst`). These extra associations do not
+imply special highlighting. Unknown text files can still be opened by browsing
+to Markraft in Windows' app picker or from inside the editor.
+
+Generation runs before `npm run tauri` and during the frontend build. Commit the
+generated `tauri.conf.json` association list and `associations.generated.nsh`;
+`npm run associations -- --check` detects drift. The Windows config overrides
+Tauri's default association handling with an empty list, so only our NSIS hooks
+register candidates (OpenWithProgids, Applications/SupportedTypes, Capabilities).
+Neither extension defaults nor UserChoice are changed. Other platforms retain
+the generated Tauri list. Do not remove the Windows override.
+
+Registration takes effect when the installer is installed/upgraded, not on
+`tauri dev`. Uninstallation removes Markraft's registrations and preserves other
+apps' candidates. `scripts/test-file-associations.ps1` executes the real hooks
+under an isolated HKCU prefix to verify registration and cleanup without touching
+the user's real file associations. CI also checks every registered extension
+after installing the full package.
