@@ -1,6 +1,6 @@
 [package]
 name = "markraft"
-version = "0.0.3"
+version = "0.0.4"
 description = "Text and Markdown editor"
 authors = ["Markraft contributors"]
 edition = "2021"

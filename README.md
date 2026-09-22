@@ -65,7 +65,7 @@ These features are available in source editors, including Markdown Raw mode.
 
 Moving tabs keeps each editor's text and undo history. Each pane selects its own document; editing and saving apply to the focused one.
 
-**Tab context menu (next release):** right-click a tab, or focus it and press
+**Tab context menu:** right-click a tab, or focus it and press
 Shift+F10, to close it, close other tabs, or close all tabs. All three context-menu actions
 apply only to the right-clicked pane; tabs in the opposite pane are untouched.
 Actions target the right-clicked tab without selecting it first. Modified drafts
@@ -82,12 +82,12 @@ Menus, dialogs, search controls, tooltips, and application messages change witho
 
 ## Get started
 
-Download **[Markraft 0.0.3](https://github.com/Hinen/Markraft/releases/tag/v0.0.3)**:
+Download **[Markraft 0.0.4](https://github.com/Hinen/Markraft/releases/tag/v0.0.4)**:
 
 | Platform | Download |
 | :--- | :--- |
-| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.3/Markraft_0.0.3_windows_x64_setup.exe) |
-| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.3/Markraft_0.0.3_macos_universal.dmg) |
+| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.4/Markraft_0.0.4_windows_x64_setup.exe) |
+| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.4/Markraft_0.0.4_macos_universal.dmg) |
 
 Run the Windows installer, or open the DMG and drag Markraft to Applications. Then open a file with **Ctrl+O**, or drop files into the window. The Windows installer is unsigned; the macOS application is ad-hoc signed and not notarized, so the OS may request approval when opening it.
 
@@ -182,7 +182,7 @@ Verify a Windows installation, using its actual installation directory:
 ./scripts/verify-windows-install.ps1 -InstallDirectory "$env:LOCALAPPDATA\Markraft"
 ```
 
-Installer appearance (next release): Markraft artwork/icons and English, Korean,
+Installer appearance: Markraft artwork/icons and English, Korean,
 Japanese pages are configured in `src-tauri/tauri.conf.json`. The OS language is
 used, falling back to English. Welcome, location and completion copy lives in
 `src-tauri/windows/installer-ui.nsh`. Rebuild the committed BMP artwork from the
