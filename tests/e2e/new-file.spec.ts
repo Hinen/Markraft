@@ -5,18 +5,18 @@ test('new files are extensionless in welcome, tab bar, shortcut and split pane',
 }) => {
   await page.goto('/');
   await page.locator('.welcome').getByRole('button', { name: 'New file', exact: true }).click();
-  await expect(page.locator('.document-name')).toHaveText('Untitled');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled');
   await expect(page.getByRole('button', { name: 'Select syntax', exact: true })).toHaveText(
     'Plain Text',
   );
   await page.locator('.new-tab').click();
-  await expect(page.locator('.document-name')).toHaveText('Untitled 2');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled 2');
   await page.keyboard.press('ControlOrMeta+n');
-  await expect(page.locator('.document-name')).toHaveText('Untitled 3');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled 3');
   await page.getByRole('button', { name: 'File', exact: true }).click();
   await expect(page.getByRole('menuitem', { name: /New Markdown/ })).toHaveCount(0);
   await page.getByRole('menuitem', { name: /New file/ }).click();
-  await expect(page.locator('.document-name')).toHaveText('Untitled 4');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled 4');
   await expect(page.getByRole('button', { name: 'Select syntax', exact: true })).toHaveText(
     'Plain Text',
   );
@@ -42,7 +42,7 @@ for (const [label, extension] of [
     await page.getByRole('textbox', { name: 'Search syntax' }).fill(`.${extension}`);
     await page.getByRole('textbox', { name: 'Search syntax' }).press('Enter');
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.locator('.document-name')).toHaveText('Untitled');
+    await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled');
     await expect(page.getByRole('button', { name: 'Select syntax', exact: true })).toContainText(
       label,
     );

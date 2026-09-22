@@ -35,7 +35,7 @@ async function openDocument(page: Page, name: string, text: string) {
     { name, text },
   );
   await page.goto('/');
-  await expect(page.locator('.document-name')).toHaveText(name);
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText(name);
 }
 
 for (const [name, label, source] of [

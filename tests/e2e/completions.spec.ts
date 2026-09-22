@@ -34,7 +34,7 @@ async function open(page: Page, name: string, text: string) {
     { name, text },
   );
   await page.goto('/');
-  await expect(page.locator('.document-name')).toHaveText(name);
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText(name);
   await page.waitForLoadState('networkidle');
   if (name.endsWith('.md')) await page.getByRole('button', { name: 'Raw', exact: true }).click();
   await page.locator('.cm-content').click();

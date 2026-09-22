@@ -616,97 +616,82 @@ export function App() {
         onClose={(id) => void guarded(() => close(id))}
         disabled={working || !!prompt || preferences || !!syntaxTab}
       />
-      {active && (
+      {active?.fileType === 'markdown' && (
         <div className="toolbar">
-          <span className="document-name" title={active.path || active.name}>
-            {active.name}
-          </span>
-          {active.fileType === 'markdown' && (
-            <>
-              <div className="mode-switch">
+          <div className="mode-switch">
+            <button
+              className={active.mode === 'rich' ? 'selected' : ''}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                tabs.patch(active.id, { mode: 'rich' });
+                focusEditor();
+              }}
+            >
+              {t('Rich')}
+            </button>
+            <button
+              className={active.mode === 'raw' ? 'selected' : ''}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                tabs.patch(active.id, { mode: 'raw' });
+                focusEditor();
+              }}
+            >
+              {t('Raw')}
+            </button>
+          </div>
+          {active.mode === 'rich' && (
+            <div className="format-tools">
+              <select
+                aria-label={t('Heading level')}
+                defaultValue=""
+                onChange={(e) => {
+                  void edit('heading', e.target.value);
+                  e.target.value = '';
+                }}
+              >
+                <option value="" disabled>
+                  {t('Text style')}
+                </option>
+                <option value="0">{t('Paragraph')}</option>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {t('Heading {n}', { n })}
+                  </option>
+                ))}
+              </select>
+              {(
+                [
+                  ['B', 'bold'],
+                  ['I', 'italic'],
+                  ['S̶', 'strike'],
+                  ['`', 'code'],
+                  ['• List', 'bullet'],
+                  ['1.', 'ordered'],
+                  ['☑', 'task'],
+                  ['❝', 'quote'],
+                  ['Link', 'link'],
+                  ['Image', 'image'],
+                  ['Table', 'table'],
+                  ['+Row', 'rowAdd'],
+                  ['−Row', 'rowDelete'],
+                  ['+Col', 'columnAdd'],
+                  ['−Col', 'columnDelete'],
+                  ['―', 'rule'],
+                ] as [string, EditorAction][]
+              ).map(([label, action]) => (
                 <button
-                  className={active.mode === 'rich' ? 'selected' : ''}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    tabs.patch(active.id, { mode: 'rich' });
-                    focusEditor();
-                  }}
+                  key={action}
+                  title={t(action)}
+                  aria-label={t(action)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => void edit(action)}
                 >
-                  {t('Rich')}
+                  {t(label)}
                 </button>
-                <button
-                  className={active.mode === 'raw' ? 'selected' : ''}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    tabs.patch(active.id, { mode: 'raw' });
-                    focusEditor();
-                  }}
-                >
-                  {t('Raw')}
-                </button>
-              </div>
-              {active.mode === 'rich' && (
-                <div className="format-tools">
-                  <select
-                    aria-label={t('Heading level')}
-                    defaultValue=""
-                    onChange={(e) => {
-                      void edit('heading', e.target.value);
-                      e.target.value = '';
-                    }}
-                  >
-                    <option value="" disabled>
-                      {t('Text style')}
-                    </option>
-                    <option value="0">{t('Paragraph')}</option>
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {t('Heading {n}', { n })}
-                      </option>
-                    ))}
-                  </select>
-                  {(
-                    [
-                      ['B', 'bold'],
-                      ['I', 'italic'],
-                      ['S̶', 'strike'],
-                      ['`', 'code'],
-                      ['• List', 'bullet'],
-                      ['1.', 'ordered'],
-                      ['☑', 'task'],
-                      ['❝', 'quote'],
-                      ['Link', 'link'],
-                      ['Image', 'image'],
-                      ['Table', 'table'],
-                      ['+Row', 'rowAdd'],
-                      ['−Row', 'rowDelete'],
-                      ['+Col', 'columnAdd'],
-                      ['−Col', 'columnDelete'],
-                      ['―', 'rule'],
-                    ] as [string, EditorAction][]
-                  ).map(([label, action]) => (
-                    <button
-                      key={action}
-                      title={t(action)}
-                      aria-label={t(action)}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => void edit(action)}
-                    >
-                      {t(label)}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
-          <button
-            className="save-button"
-            disabled={working}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => requestSave(active.id)}
-          >
-            {t('Save')}
-          </button>
         </div>
       )}
       {error && (

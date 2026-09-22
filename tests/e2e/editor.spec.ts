@@ -61,7 +61,7 @@ async function launch(page: Page, text = markdown, name = 'note.md') {
     { text, name },
   );
   await page.goto('/');
-  await expect(page.locator('.document-name')).toHaveText(name);
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText(name);
 }
 async function dragTab(page: Page, source: Locator, target: Locator, after = false) {
   const from = (await source.boundingBox())!;
@@ -253,10 +253,10 @@ test('UX audit: focusing a search field in the other pane does not steal its car
   const input = page.getByRole('textbox', { name: 'Find in document' });
   await input.fill('Hello');
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   await page.getByRole('button', { name: 'Split view', exact: true }).click();
   await input.focus();
-  await expect(page.locator('.document-name')).toHaveText('note.md');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('note.md');
   await expect(input).toBeFocused();
   await page.keyboard.press('ControlOrMeta+b');
   await expect(input).toBeFocused();
@@ -270,7 +270,7 @@ test('UX audit: close all preserves edits made to an earlier tab while another t
 }) => {
   await launch(page, 'original', 'note.txt');
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   await page.locator('.cm-content:visible').click();
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.type('changed');
@@ -318,7 +318,7 @@ test('UX audit: repeated Ctrl+S during a pending save writes the latest text aft
       return invoke(command, args);
     };
   });
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   await expect
     .poll(() => page.evaluate(() => typeof (window as any).__releaseSave))
     .toBe('function');
@@ -404,27 +404,33 @@ test('UX audit: Keep Mine retains dirty text entered while the disk read is pend
   await page.keyboard.press('End');
   await page.keyboard.type(' + later');
   await page.evaluate(() => (window as any).__releaseRead());
-  await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+  await expect(page.locator('.new-tab')).toBeEnabled();
   await expect(page.getByLabel('Unsaved changes')).toBeVisible();
   await page.keyboard.press('ControlOrMeta+s');
   await expect
     .poll(() => page.evaluate(() => (window as any).__testSaved.at(-1)?.text))
     .toBe('disk same + later');
 });
-test('UX audit: focusing either split pane does not shift the editor below its toolbar', async ({
-  page,
-}) => {
+test('Markdown tools appear only for the focused Markdown document', async ({ page }) => {
   await page.setViewportSize({ width: 700, height: 650 });
   await launch(page);
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   await page.getByRole('button', { name: 'Split view', exact: true }).click();
   const workspace = page.locator('.editor-workspace');
   const before = (await workspace.boundingBox())!.y;
+  await expect(page.locator('.toolbar')).toHaveCount(0);
   await page.locator('.ProseMirror h1').click();
-  await expect(page.locator('.document-name')).toHaveText('note.md');
-  expect((await workspace.boundingBox())!.y).toBe(before);
-  await page.locator('.cm-content:visible').click();
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('note.md');
+  await expect(page.locator('.toolbar')).toBeVisible();
+  await expect(page.locator('.format-tools')).toBeVisible();
+  await expect(page.locator('.document-name, .save-button')).toHaveCount(0);
+  expect((await workspace.boundingBox())!.y).toBeGreaterThan(before);
+  await page.getByRole('button', { name: 'Raw', exact: true }).click();
+  await expect(page.locator('.toolbar')).toBeVisible();
+  await expect(page.locator('.format-tools')).toHaveCount(0);
+  await page.locator('[data-editor-pane="secondary"] .cm-content:visible').click();
+  await expect(page.locator('.toolbar')).toHaveCount(0);
   expect((await workspace.boundingBox())!.y).toBe(before);
   await page.screenshot({ path: 'test-results/ux-stable-toolbar.png' });
 });
@@ -461,7 +467,7 @@ test('UX audit: overflowing tabs reveal selection, wheel scroll and continuously
   const bar = page.getByRole('navigation', { name: 'Documents', exact: true });
   await expect.poll(() => bar.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
   await page.keyboard.press('ControlOrMeta+Tab');
-  await expect(page.locator('.document-name')).toHaveText('note.md');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('note.md');
   await expect.poll(() => bar.evaluate((el) => el.scrollLeft)).toBeLessThan(10);
   await bar.hover();
   await page.mouse.wheel(0, 280);
@@ -482,7 +488,7 @@ test('UX audit: overflowing tabs reveal selection, wheel scroll and continuously
     .filter({ hasText: /^TUntitled 2$/ })
     .click({ button: 'middle' });
   await expect(page.locator('.tab')).toHaveCount(16);
-  await expect(page.locator('.document-name')).toHaveText('note.md');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('note.md');
 });
 test('UX audit: one document cannot create an empty split, and deleted files offer Save As', async ({
   page,
@@ -510,7 +516,7 @@ test('UX audit: Save keeps the caret ready for continued typing and empty menus 
   await page.locator('.ProseMirror h1').click();
   await page.keyboard.press('End');
   await page.keyboard.type(' first');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   await page.keyboard.type(' second');
   await expect(page.locator('.ProseMirror h1')).toHaveText('한글 제목 first second');
   await page.keyboard.press('ControlOrMeta+w');
@@ -525,7 +531,7 @@ test('UX audit: closing the last tab on either side collapses split without remo
 }) => {
   await launch(page);
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   await page.locator('.ProseMirror').evaluate((el) => (el.dataset.instance = 'survivor'));
   await page.getByRole('button', { name: 'Split view', exact: true }).click();
   await page.getByRole('button', { name: 'Close config.yaml', exact: true }).click();
@@ -583,13 +589,13 @@ test('UX audit: new documents have distinct names and Ctrl+Tab cycles within the
 }) => {
   await launch(page);
   await page.keyboard.press('ControlOrMeta+n');
-  await expect(page.locator('.document-name')).toHaveText('Untitled');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled');
   await page.keyboard.press('ControlOrMeta+n');
-  await expect(page.locator('.document-name')).toHaveText('Untitled 2');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled 2');
   await page.keyboard.press('ControlOrMeta+Tab');
-  await expect(page.locator('.document-name')).toHaveText('note.md');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('note.md');
   await page.keyboard.press('ControlOrMeta+Shift+Tab');
-  await expect(page.locator('.document-name')).toHaveText('Untitled 2');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled 2');
 });
 for (const side of ['primary', 'secondary'] as const)
   test(`drag a tab to the ${side} editor edge to split without a button`, async ({ page }) => {
@@ -600,7 +606,7 @@ for (const side of ['primary', 'secondary'] as const)
     await page.keyboard.type(' local');
     await rich.evaluate((el) => (el.dataset.instance = 'before-edge-split'));
     await page.keyboard.press('ControlOrMeta+o');
-    await expect(page.locator('.document-name')).toHaveText('config.yaml');
+    await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
     const source = page.locator('.tab > button[title]').filter({ hasText: 'note.md' }),
       from = (await source.boundingBox())!;
     const area = (await page.locator('.editor-workspace').boundingBox())!;
@@ -652,7 +658,7 @@ test('edge split preview cancels with Escape; center and outside drops do not sp
 }) => {
   await launch(page);
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   const from = (await page.locator('.tab > button[title]').first().boundingBox())!,
     area = (await page.locator('.editor-workspace').boundingBox())!;
   for (const cancel of [true, false]) {
@@ -680,7 +686,7 @@ test('pointer tab reorder and cancellation retain dirty text, editor instance an
 }) => {
   await launch(page);
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   await page.keyboard.press('ControlOrMeta+n');
   const content = page.locator('.cm-content:visible');
   await content.click();
@@ -732,7 +738,7 @@ test('split pane focus routes saves correctly and cross-pane drag keeps Rich und
   await page.keyboard.type(' local');
   await rich.evaluate((el) => (el.dataset.testInstance = 'rich-original'));
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   await page
     .getByRole('navigation', { name: 'Documents', exact: true })
     .getByRole('button', { name: /^M↓.*note.md/ })
@@ -753,7 +759,7 @@ test('split pane focus routes saves correctly and cross-pane drag keeps Rich und
   expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toContain('left: []');
   await expect(page.getByLabel('Unsaved changes')).toHaveCount(1);
   await right.locator('h1').click();
-  await expect(page.locator('.document-name')).toHaveText('note.md');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('note.md');
   await dragTab(
     page,
     page.getByRole('navigation', { name: 'Right documents' }).locator('.tab > button:first-child'),
@@ -774,7 +780,7 @@ test('split divider resizes, dirty close can cancel, and discard collapses the e
 }) => {
   await launch(page);
   await page.keyboard.press('ControlOrMeta+o');
-  await expect(page.locator('.document-name')).toHaveText('config.yaml');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('config.yaml');
   await page.getByRole('button', { name: 'Split view', exact: true }).click();
   await expect(page.locator('.editor-host[data-editor-pane="secondary"]:visible')).toHaveAttribute(
     'aria-label',
@@ -824,12 +830,12 @@ test('QA.md Rich single-space save preserves every unrelated source byte, includ
     selection.collapseToEnd();
   });
   await page.keyboard.type(' ');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
     source.replace(needle, needle + ' '),
   );
   await page.keyboard.press('ControlOrMeta+z');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(source);
   await page.getByRole('button', { name: 'Raw', exact: true }).click();
   await page.locator('.cm-content:visible').click();
@@ -844,7 +850,7 @@ test('QA.md Rich single-space save preserves every unrelated source byte, includ
     selection.collapseToEnd();
   });
   await page.keyboard.type(' ');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
     source.replace('기록\n', '기록 raw\n').replace(needle, needle + ' '),
   );
@@ -855,7 +861,7 @@ test('HTML source next to edited text is preserved', async ({ page }) => {
   await page.locator('.ProseMirror').click();
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.type(' edit');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
     source.replace('paragraph', 'paragraph edit'),
   );
@@ -877,7 +883,7 @@ test('a source preservation error blocks saving while keeping Raw recovery edita
       dirty: true,
     });
   });
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   await expect(page.getByRole('alert')).toContainText('Raw');
   expect(await page.evaluate(() => (window as any).__testSaved.length)).toBe(0);
   await page.getByRole('button', { name: 'Raw', exact: true }).click();
@@ -885,7 +891,7 @@ test('a source preservation error blocks saving while keeping Raw recovery edita
   await page.locator('.cm-content').click();
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.type(' reviewed');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toContain(
     'paragraph edit',
   );
@@ -898,7 +904,7 @@ test('rich editing, nested checkbox, table, raw sync and no-op save', async ({ p
   await launch(page);
   const rich = page.locator('.ProseMirror');
   await expect(rich.locator('h1')).toHaveText('한글 제목');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(await page.evaluate(() => (window as any).__testSaved.length)).toBe(0);
   await page.getByRole('checkbox', { name: 'Toggle task' }).first().check();
   await expect(page.getByLabel('Unsaved changes')).toBeVisible();
@@ -917,7 +923,7 @@ test('rich editing, nested checkbox, table, raw sync and no-op save', async ({ p
   await page.keyboard.type('\n\nRaw addition');
   await page.getByRole('button', { name: 'Rich', exact: true }).click();
   await expect(rich).toContainText('Raw addition');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   const saved = await page.evaluate(() => (window as any).__testSaved.at(-1).text);
   expect(saved).toContain('[x] parent');
   expect(saved).toContain('[x] child');
@@ -972,7 +978,7 @@ test('external changes reload clean tabs and protect local changes', async ({ pa
   });
   await expect(page.getByRole('button', { name: 'Keep Mine', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Keep Mine', exact: true }).click();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toContain(
     'external local',
   );
@@ -1010,7 +1016,7 @@ test('JSON opens, folds, reports syntax errors and saves without rewriting numer
   await page.getByRole('menuitem', { name: /New file/ }).click();
   await page.getByRole('button', { name: 'Select syntax', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'JSON .json', exact: true }).click();
-  await expect(page.locator('.document-name')).toHaveText('Untitled');
+  await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText('Untitled');
   await expect(page.getByLabel('json source editor').last()).toBeVisible();
 });
 
@@ -1134,7 +1140,7 @@ test('rich find, table structure commands, and task stress', async ({ page }) =>
   await expect(page.locator('.ProseMirror th')).toHaveCount(2);
   await page.getByRole('button', { name: 'rowDelete', exact: true }).click();
   await expect(page.locator('.ProseMirror tr')).toHaveCount(2);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.keyboard.press('ControlOrMeta+s');
   expect(
     await page.evaluate(() => (window as any).__testSaved.at(-1).text.match(/- \[x\]/g).length),
   ).toBe(15);
