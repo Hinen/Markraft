@@ -45,6 +45,8 @@ export const messages: Record<string, readonly [string, string]> = {
   'Save As…': ['다른 이름으로 저장…', '名前を付けて保存…'],
   'Close tab': ['탭 닫기', 'タブを閉じる'],
   'Close all tabs': ['모든 탭 닫기', 'すべてのタブを閉じる'],
+  'Tab actions for {name}': ['{name} 탭 메뉴', '{name} のタブメニュー'],
+  'Close other tabs': ['다른 탭 모두 닫기', '他のタブをすべて閉じる'],
   Undo: ['실행 취소', '元に戻す'],
   Redo: ['다시 실행', 'やり直す'],
   Find: ['찾기', '検索'],

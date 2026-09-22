@@ -1,4 +1,5 @@
 import { syntaxRegistry } from '../files/syntaxRegistry';
+import { TabContextMenu } from './TabContextMenu';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { tabs, useTabs, type Pane } from './tabStore';
@@ -14,15 +15,27 @@ type Drop = {
 };
 export function TabBars({
   onClose,
+  onCloseMany,
   onNew,
   disabled,
 }: {
   onClose: (id: string) => void;
+  onCloseMany: (ids: string[]) => void;
   onNew: (pane: Pane) => void;
   disabled: boolean;
 }) {
   const { t } = useI18n();
   const state = useTabs();
+  const [context, setContext] = useState<{
+    id: string;
+    x: number;
+    y: number;
+    trigger: HTMLElement;
+  } | null>(null);
+  const contextTab = state.tabs.find((tab) => tab.id === context?.id);
+  useEffect(() => {
+    if (disabled || !contextTab) setContext(null);
+  }, [disabled, contextTab?.id]);
   const drag = useRef<{
     id: string;
     pointer: number;
@@ -212,6 +225,28 @@ export function TabBars({
                 className={`tab ${state.selected[pane] === tab.id ? 'active' : ''} ${dragged === tab.id ? 'dragging' : ''} ${drop?.target === tab.id ? (drop.before ? 'drop-before' : 'drop-after') : ''}`}
                 key={tab.id}
                 data-tab-id={tab.id}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  if (disabled) return;
+                  const trigger = event.currentTarget.querySelector<HTMLButtonElement>('button')!;
+                  const rect = trigger.getBoundingClientRect();
+                  setContext({
+                    id: tab.id,
+                    x: event.clientX || rect.left,
+                    y: event.clientY || rect.bottom,
+                    trigger,
+                  });
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10'))
+                    return;
+                  event.preventDefault();
+                  if (disabled) return;
+                  const trigger = event.currentTarget.querySelector<HTMLButtonElement>('button')!;
+                  const rect = trigger.getBoundingClientRect();
+                  setContext({ id: tab.id, x: rect.left, y: rect.bottom, trigger });
+                }}
                 onAuxClick={(event) => {
                   if (event.button === 1) {
                     event.preventDefault();
@@ -339,6 +374,20 @@ export function TabBars({
           </div>,
           document.body,
         )}
+      {context && contextTab && !disabled && (
+        <TabContextMenu
+          target={contextTab}
+          x={context.x}
+          y={context.y}
+          tabs={state.tabs}
+          onClose={onClose}
+          onCloseMany={onCloseMany}
+          dismiss={(restoreFocus) => {
+            setContext(null);
+            if (restoreFocus) context.trigger.focus();
+          }}
+        />
+      )}
     </div>
   );
 }

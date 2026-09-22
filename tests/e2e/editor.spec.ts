@@ -1082,7 +1082,7 @@ test('XML syntax and find/replace panel', async ({ page }) => {
   await expect(page.locator('.cm-content')).toContainText('<root>');
   await page.keyboard.press('ControlOrMeta+h');
   await expect(page.locator('.cm-search')).toBeVisible();
-  expect(await page.locator('.cm-line span').count()).toBeGreaterThan(0);
+  await expect(page.locator('.cm-line span').first()).toBeVisible();
 });
 
 for (const [name, text] of [

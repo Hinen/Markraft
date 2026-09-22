@@ -196,18 +196,27 @@ export function App() {
     focusEditor();
     return true;
   }
-  async function closeAll() {
-    const originalActive = tabs.get().active;
-    const closing = [...tabs.get().tabs];
+  async function closeMany(ids: string[]) {
+    const original = tabs.get();
+    const closing = original.tabs.filter((tab) => ids.includes(tab.id));
+    const restoreSelection = () => {
+      for (const id of Object.values(original.selected)) if (id) tabs.select(id);
+      if (original.active) tabs.select(original.active);
+      focusEditor();
+    };
     const confirmedText = new Map<string, string>();
-    for (const tab of closing) {
-      if (!(await confirmClose(tab.id))) {
-        if (originalActive) tabs.select(originalActive);
-        focusEditor();
-        return false;
+    try {
+      for (const tab of closing) {
+        if (!(await confirmClose(tab.id))) {
+          restoreSelection();
+          return false;
+        }
+        const current = tabs.get().tabs.find((t) => t.id === tab.id);
+        if (current) confirmedText.set(tab.id, current.text);
       }
-      const current = tabs.get().tabs.find((t) => t.id === tab.id);
-      if (current) confirmedText.set(tab.id, current.text);
+    } catch (error) {
+      restoreSelection();
+      throw error;
     }
     const changed = tabs
       .get()
@@ -221,6 +230,11 @@ export function App() {
       return false;
     }
     for (const tab of closing) tabs.close(tab.id);
+    focusEditor();
+    return true;
+  }
+  async function closeAll() {
+    if (!(await closeMany(tabs.get().tabs.map((tab) => tab.id)))) return false;
     return tabs.get().tabs.length === 0;
   }
   function toggle() {
@@ -390,7 +404,7 @@ export function App() {
   }, []);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
-      if ((event.target as Element)?.closest?.('[role="dialog"]')) {
+      if ((event.target as Element)?.closest?.('[role="dialog"], [data-tab-context-menu]')) {
         if (
           (event.ctrlKey || event.metaKey) &&
           ['n', 'w', 'o', 's', 'm', 'tab', 'pageup', 'pagedown'].includes(event.key.toLowerCase())
@@ -612,6 +626,7 @@ export function App() {
         </button>
       </header>
       <TabBars
+        onCloseMany={(ids) => void guarded(() => closeMany(ids))}
         onNew={(pane) => void newFile(pane)}
         onClose={(id) => void guarded(() => close(id))}
         disabled={working || !!prompt || preferences || !!syntaxTab}

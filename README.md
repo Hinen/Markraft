@@ -66,6 +66,15 @@ they do not use AI or a language server.
 
 Moving tabs keeps each editor's text and undo history. Each pane selects its own document; editing and saving apply to the focused one.
 
+**Tab context menu (next release):** right-click a tab, or focus it and press
+Shift+F10, to close it, close other tabs, or close all tabs. All three context-menu actions
+apply only to the right-clicked pane; tabs in the opposite pane are untouched.
+Actions target the right-clicked tab without selecting it first. Modified drafts
+prompt for Save / Discard / Cancel. Bulk closing keeps every tab open if a prompt
+or Save As is cancelled, saving fails, or new edits arrive during confirmation.
+Saves already completed before cancellation remain saved. Closing the last tab
+in a pane merges the remaining tabs into one pane.
+
 ### Choose your language
 
 The interface follows your system's preferred supported language on first launch. Choose **English**, **한국어**, **日本語**, or **System** under **View → Settings → Language**. An explicit choice is remembered across restarts; unsupported system languages fall back to English.

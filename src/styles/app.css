@@ -154,6 +154,13 @@ main {
   font-size: 12px;
   padding: 9px;
 }
+.tab-context-menu {
+  position: fixed;
+  z-index: 30;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
 .menu-backdrop {
   position: fixed;
   inset: 0;
