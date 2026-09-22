@@ -1,7 +1,7 @@
 param([Parameter(Mandatory = $true)][string]$InstallDirectory)
 $ErrorActionPreference = 'Stop'
 $exe = Join-Path (Resolve-Path -LiteralPath $InstallDirectory).Path 'markraft.exe'
-foreach ($file in @($exe, (Join-Path $InstallDirectory 'README.md'), (Join-Path $InstallDirectory 'DEPENDENCIES.md'), (Join-Path $InstallDirectory 'LICENSE_REVIEW.md'), (Join-Path $InstallDirectory 'THIRD_PARTY_NOTICES.txt'))) {
+foreach ($file in @($exe, (Join-Path $InstallDirectory 'LICENSE'), (Join-Path $InstallDirectory 'README.md'), (Join-Path $InstallDirectory 'DEPENDENCIES.md'), (Join-Path $InstallDirectory 'DEPENDENCY_REVIEW.md'), (Join-Path $InstallDirectory 'THIRD_PARTY_NOTICES.txt'))) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Missing installed file: $file" }
 }
 $command = (Get-Item 'HKCU:\Software\Classes\Markraft.Document\shell\open\command').GetValue('')

@@ -15,7 +15,8 @@
   <a href="#get-started">Get started</a> ·
   <a href="#editing">Editing</a> ·
   <a href="#keyboard-shortcuts">Shortcuts</a> ·
-  <a href="#development">Development</a>
+  <a href="#development">Development</a> ·
+  <a href="#license">MIT License</a>
 </p>
 
 ![Rich Markdown and JSON open side by side in Markraft](assets/screenshots/workspace.png)
@@ -183,4 +184,12 @@ tests/         Unit tests, Markdown fixtures, and UI regression checks
 
 Windows 11 x64 installer and installed-app checks have been run. Windows 10, current macOS behavior, and some Windows IME/Explorer scenarios still need verification; installers are unsigned. See [QA.md](QA.md) and [regression notes](QA_REGRESSIONS.md) for the tested scope.
 
-Dependency versions and licenses are listed in [DEPENDENCIES.md](DEPENDENCIES.md), with upstream notices in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt). Tauri's transitive MPL-2.0 dependencies remain subject to the project's unresolved distribution-policy review; see [LICENSE_REVIEW.md](LICENSE_REVIEW.md).
+## License
+
+Markraft is licensed under the **[MIT License](LICENSE)**.
+You may use, modify, and redistribute it, including commercially, while retaining
+the copyright and license notice. The software is provided without warranty.
+
+Third-party components retain their own licenses. See the
+[dependency inventory](DEPENDENCIES.md), [upstream notices](THIRD_PARTY_NOTICES.txt),
+and [dependency review and source links](DEPENDENCY_REVIEW.md).

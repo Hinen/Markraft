@@ -93,6 +93,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
           lipo "$app/Contents/MacOS/markraft" -verify_arch arm64 x86_64
           codesign --verify --deep --strict --verbose=2 "$app"
+          test -f "$app/Contents/Resources/LICENSE"
+          test -f "$app/Contents/Resources/DEPENDENCY_REVIEW.md"
           test -f "$app/Contents/Resources/THIRD_PARTY_NOTICES.txt"
           hdiutil verify "$dmg"
           mount="$RUNNER_TEMP/markraft-release-dmg"

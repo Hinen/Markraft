@@ -122,7 +122,7 @@
 - Vite의 Rust 출력 감시 제외, Windows 잠금 보존 회귀 테스트, HOME 없는 라이선스 생성 수정.
 - NSIS 전용 ProgID·경로 인용·기본 앱 후보·제거 정리 및 설치 검증 스크립트 추가.
 - CI에 rustfmt/clippy/audit/licenses, 공백 경로 설치 등록 검사, SHA-256 artifact 추가. 실제 GitHub Actions 실행은 NOT RUN.
-- MPL-2.0 간접 의존성은 여전히 존재한다. [LICENSE_REVIEW.md](LICENSE_REVIEW.md)에 Windows 런타임/호스트 도구 경로, upstream/패치 대안 및 예외 허용 여부의 정책 결정을 기록했다. 임의 예외나 의존성 교체는 하지 않았다.
+- MPL-2.0 간접 의존성은 여전히 존재한다. [DEPENDENCY_REVIEW.md](DEPENDENCY_REVIEW.md)에 Windows 런타임/호스트 도구 경로, upstream/패치 대안 및 예외 허용 여부의 정책 결정을 기록했다. 임의 예외나 의존성 교체는 하지 않았다.
 - Windows 10, 실제 IME 및 위 NOT RUN 항목을 완료하고 MPL 정책을 결정하기 전에는 정식 출시 완료로 표시하지 않는다.
 
 ## 이전 macOS 검증 기록 (인계 당시 상태)

@@ -1,3 +1,10 @@
+Markraft — Third-party notices
+
+Markraft itself is licensed under the MIT License; see LICENSE.
+The components below retain their own licenses and copyright notices.
+This collection includes development and platform-specific dependencies.
+See DEPENDENCIES.md for the inventory and DEPENDENCY_REVIEW.md for MPL source links.
+Upstream license texts below are reproduced without translation.
 
 ================================================================================
 adler2 2.0.1 (Cargo) — LICENSE-0BSD
