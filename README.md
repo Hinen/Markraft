@@ -70,12 +70,12 @@ Menus, dialogs, search controls, tooltips, and application messages change witho
 
 ## Get started
 
-Download **[Markraft 0.0.2](https://github.com/Hinen/Markraft/releases/tag/v0.0.2)**:
+Download **[Markraft 0.0.3](https://github.com/Hinen/Markraft/releases/tag/v0.0.3)**:
 
 | Platform | Download |
 | :--- | :--- |
-| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.2/Markraft_0.0.2_windows_x64_setup.exe) |
-| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.2/Markraft_0.0.2_macos_universal.dmg) |
+| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.3/Markraft_0.0.3_windows_x64_setup.exe) |
+| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.3/Markraft_0.0.3_macos_universal.dmg) |
 
 Run the Windows installer, or open the DMG and drag Markraft to Applications. Then open a file with **Ctrl+O**, or drop files into the window. The Windows installer is unsigned; the macOS application is ad-hoc signed and not notarized, so the OS may request approval when opening it.
 
