@@ -63,6 +63,10 @@ These features are available in source editors, including Markdown Raw mode.
 - **Resize:** drag the divider; double-click it to restore equal widths.
 - **Merge:** choose **Merge**, or close/move the last document out of either pane.
 
+On restart, Markraft restores open tabs, their order and selection, the split layout,
+and unsaved edits. Quitting the application saves this workspace without closing its
+tabs. Explicitly closing a tab still offers Save / Discard / Cancel for modified text.
+
 Moving tabs keeps each editor's text and undo history. Each pane selects its own document; editing and saving apply to the focused one.
 
 **Tab context menu:** right-click a tab, or focus it and press
@@ -112,7 +116,7 @@ Saving JSON does not reformat it or convert large integers. Rich Markdown editin
 | Unchanged files | Saving without changes preserves file bytes and modification time. |
 | External edits | Clean documents reload; modified documents ask you to reload or keep your edits. |
 | Missing files | **Save As** lets you keep a copy. |
-| Closing | Modified files ask for Save / Discard / Cancel. Canceling **Close all** keeps the tabs open. |
+| Closing tabs | Modified files ask for Save / Discard / Cancel. Canceling **Close all** keeps the tabs open. |
 
 <details>
 <summary><strong>Markdown, images, and current limits</strong></summary>
@@ -123,7 +127,7 @@ Saving JSON does not reformat it or convert large integers. Rich Markdown editin
 - Raw and Rich have separate undo histories. Tabs preserve those histories, but switching modes is not a shared undo timeline.
 - Remote HTTPS images load only when you choose **Load once**. Relative PNG/JPEG/GIF/WebP images must be inside the document folder and no larger than 20 MB.
 - Files larger than 100 MB are rejected. Large Markdown documents offer a Raw-mode alternative.
-- Session restoration, crash recovery, and automatic updates are not implemented. Save edits before closing or terminating the app.
+- Workspace snapshots are written during editing and when quitting normally. A hard crash can lose edits made since the last snapshot. Automatic updates are not implemented.
 
 </details>
 
@@ -265,6 +269,7 @@ If WebView2 is missing, setup may download and install it from Microsoft.
 Uninstall Markraft through **Settings → Apps → Installed apps**. Documents you saved
 are not application files and should be kept or removed separately; application
 preferences or platform runtime data may remain after uninstalling.
+The workspace snapshot may also remain in the application's local data directory.
 
 On macOS, drag the application from the DMG to Applications. To uninstall, quit it
 and move Markraft.app to Trash. Documents and application preference/WebView data

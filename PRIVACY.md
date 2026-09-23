@@ -1,22 +1,25 @@
 # Privacy policy
 
-Updated September 22, 2026. Applies to the Markraft desktop application.
+Updated September 23, 2026. Applies to the Markraft desktop application.
 
 ## Documents and settings
 
 Markraft reads and writes files selected by the user. It does not operate a document
 upload service or include analytics, advertising, account registration, automatic
-update checks, or automatic crash-report uploads. Unsaved edits remain in memory;
-there is no crash-recovery service.
+update checks, or automatic crash-report uploads. Open tabs and their contents,
+including unsaved edits, are saved locally so the workspace can reopen after a restart.
 
 Language grammars are packaged with the application; selecting one does not download a model or
 send document contents to a service. Word suggestions use the current document,
 and this version does not connect to an AI completion service or language server.
 
 Language, theme, font, and editor preferences are stored in the application's local
-WebView storage under `markraft.settings`. Local images are read through the native
-file bridge. Saving to a cloud-synchronized folder or network drive uses the location
-you selected; its synchronization and access rules are controlled by that provider.
+WebView storage under `markraft.settings`. The desktop workspace snapshot is stored
+in the application's local data directory as `workspace.json`; it contains document
+paths, document text, and tab layout. It is not uploaded by Markraft. Local images
+are read through the native file bridge. Saving to a cloud-synchronized folder or
+network drive uses the location you selected; its synchronization and access rules
+are controlled by that provider.
 
 ## Network requests you initiate
 

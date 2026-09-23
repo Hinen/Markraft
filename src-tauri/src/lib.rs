@@ -1,6 +1,7 @@
 mod atomic_write;
 mod encoding;
 mod files;
+mod workspace;
 use files::FileState;
 use tauri::{Emitter, Manager};
 fn queue(app: &tauri::AppHandle, paths: impl Iterator<Item = std::path::PathBuf>) {
@@ -47,7 +48,9 @@ pub fn run() {
             files::check_document,
             files::save_document,
             files::local_image,
-            files::open_link
+            files::open_link,
+            workspace::save_workspace,
+            workspace::load_workspace
         ])
         .build(tauri::generate_context!())
         .expect("Unable to start Markraft")

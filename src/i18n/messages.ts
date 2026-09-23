@@ -16,6 +16,11 @@ export const messages: Record<string, readonly [string, string]> = {
   Help: ['도움말', 'ヘルプ'],
   'New text': ['새 텍스트', '新規テキスト'],
   'New file': ['새 파일', '新規ファイル'],
+  'Opening workspace…': ['작업 공간 여는 중…', 'ワークスペースを開いています…'],
+  'Cannot restore the saved workspace. Its snapshot was kept.': [
+    '저장된 작업 공간을 복원하지 못했습니다. 기존 기록은 유지했습니다.',
+    '保存されたワークスペースを復元できませんでした。スナップショットは保持されています。',
+  ],
   'All files': ['모든 파일', 'すべてのファイル'],
   Complete: ['자동완성', '補完'],
   Completions: ['자동완성 후보', '補完候補'],

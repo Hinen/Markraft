@@ -21,7 +21,7 @@ export interface EditorTab {
   line: number;
   column: number;
 }
-interface TabState {
+export interface TabState {
   tabs: EditorTab[];
   active: string | null;
   activePane: Pane;
@@ -57,6 +57,10 @@ function emit() {
 }
 export const tabs = {
   get: () => state,
+  restore(restored: TabState) {
+    state = restored;
+    emit();
+  },
   subscribe(fn: () => void) {
     listeners.add(fn);
     return () => {

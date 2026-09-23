@@ -15,6 +15,7 @@ import { editorActions, focusEditor, type EditorAction } from '../editors/editor
 import { useSettings, setSettings } from '../settings/settingsStore';
 import { useI18n, errorText } from '../i18n/i18n';
 import { version } from '../../package.json';
+import { restoreWorkspace, saveWorkspace, snapshotWorkspace } from '../workspace/workspaceSession';
 type Prompt = {
   id: string;
   title: string;
@@ -39,6 +40,11 @@ export function App() {
   const [fontSizeDraft, setFontSizeDraft] = useState(String(settings.fontSize));
   const [menu, setMenu] = useState<string | null>(null);
   const [splitRatio, setSplitRatio] = useState(0.5);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
+  const workspaceReadyRef = useRef(false);
+  const splitRatioRef = useRef(splitRatio);
+  splitRatioRef.current = splitRatio;
+  const scheduleWorkspaceSave = useRef<(() => void) | null>(null);
   const busy = useRef(false);
   const pendingSaves = useRef(new Map<string, boolean>());
   const [working, setWorking] = useState(false);
@@ -274,6 +280,9 @@ export function App() {
   const handlers = useRef({ closeAll, close, save, requestSave, open, toggle, edit, guarded });
   handlers.current = { closeAll, close, save, requestSave, open, toggle, edit, guarded };
   useEffect(() => {
+    scheduleWorkspaceSave.current?.();
+  }, [splitRatio]);
+  useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
   useEffect(() => {
@@ -321,9 +330,42 @@ export function App() {
   }, [notice]);
   useEffect(() => {
     let stopped = false;
+    let ready = false;
     let polling = false;
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    let writeQueue = Promise.resolve(true);
+    let writable = true;
+    let pendingListener = Promise.resolve();
     const cleanup: (() => void)[] = [];
+    function enqueueSave() {
+      const snapshot = snapshotWorkspace(splitRatioRef.current);
+      writeQueue = writeQueue.then(async () => {
+        try {
+          await saveWorkspace(snapshot);
+          return true;
+        } catch (error) {
+          if (!stopped) setError(String(error));
+          return false;
+        }
+      });
+      return writeQueue;
+    }
+    function scheduleSave() {
+      writable = true;
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        saveTimer = null;
+        void enqueueSave();
+      }, 300);
+    }
+    async function flushSave() {
+      if (!writable) return true;
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = null;
+      return enqueueSave();
+    }
     async function pending() {
+      if (!ready) return;
       try {
         const docs = await files.pending();
         if (!stopped)
@@ -335,37 +377,55 @@ export function App() {
         if (!stopped) setError(String(e));
       }
     }
+    const startup = (async () => {
+      try {
+        const ratio = await restoreWorkspace();
+        await pendingListener;
+        if (stopped) return;
+        if (ratio !== null) {
+          splitRatioRef.current = ratio;
+          setSplitRatio(ratio);
+        }
+      } catch (error) {
+        writable = false;
+        if (!stopped) setError(t(error instanceof Error ? error.message : String(error)));
+      } finally {
+        if (!stopped) {
+          ready = true;
+          workspaceReadyRef.current = true;
+          setWorkspaceReady(true);
+          cleanup.push(tabs.subscribe(scheduleSave));
+          scheduleWorkspaceSave.current = scheduleSave;
+          if ('__TAURI_INTERNALS__' in window) void pending();
+        }
+      }
+    })();
+    async function closeWindow() {
+      await startup;
+      if (await flushSave()) await getCurrentWindow().destroy();
+    }
     // Subscribe before draining the queue, so cold-start and second-instance events cannot be lost.
     if (isTauri()) {
-      void listen('files-pending', pending).then((unlisten) => {
+      pendingListener = listen('files-pending', pending).then((unlisten) => {
         if (stopped) unlisten();
-        else {
-          cleanup.push(unlisten);
-          void pending();
-        }
+        else cleanup.push(unlisten);
       });
-      void listen('request-close', () =>
-        handlers.current.guarded(async () => {
-          if (await handlers.current.closeAll()) await getCurrentWindow().destroy();
-        }),
-      ).then((unlisten) => {
+      void listen('request-close', () => handlers.current.guarded(closeWindow)).then((unlisten) => {
         if (stopped) unlisten();
         else cleanup.push(unlisten);
       });
       void getCurrentWindow()
         .onCloseRequested(async (event) => {
           event.preventDefault();
-          await handlers.current.guarded(async () => {
-            if (await handlers.current.closeAll()) await getCurrentWindow().destroy();
-          });
+          await handlers.current.guarded(closeWindow);
         })
         .then((unlisten) => {
           if (stopped) unlisten();
           else cleanup.push(unlisten);
         });
-    } else void pending();
+    }
     const interval = setInterval(async () => {
-      if (polling || busy.current || stopped) return;
+      if (!ready || polling || busy.current || stopped) return;
       polling = true;
       try {
         for (const tab of tabs.get().tabs) {
@@ -398,12 +458,16 @@ export function App() {
     }, 2000);
     return () => {
       stopped = true;
+      workspaceReadyRef.current = false;
+      scheduleWorkspaceSave.current = null;
+      if (saveTimer) clearTimeout(saveTimer);
       clearInterval(interval);
       cleanup.forEach((fn) => fn());
     };
   }, []);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
+      if (!workspaceReadyRef.current) return;
       if ((event.target as Element)?.closest?.('[role="dialog"], [data-tab-context-menu]')) {
         if (
           (event.ctrlKey || event.metaKey) &&
@@ -506,6 +570,14 @@ export function App() {
     ],
     ['Settings…', '', () => setPreferences(true)],
   ];
+  if (!workspaceReady)
+    return (
+      <main>
+        <div className="welcome" role="status">
+          {t('Opening workspace…')}
+        </div>
+      </main>
+    );
   return (
     <main style={{ '--split-left': `${splitRatio * 100}%` } as CSSProperties}>
       <header className="menubar">
