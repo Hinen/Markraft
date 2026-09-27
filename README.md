@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.svg" width="72" height="72" alt="Markraft icon">
+  <img src="assets/icon.png" width="72" height="72" alt="Markraft icon">
 </p>
 
 <h1 align="center">Markraft</h1>
@@ -121,7 +121,7 @@ Saving JSON does not reformat it or convert large integers. Rich Markdown editin
 <details>
 <summary><strong>Markdown, images, and current limits</strong></summary>
 
-- Rich mode supports CommonMark and GFM. Use Raw for frontmatter, math, or custom Markdown extensions. Raw HTML is shown as text rather than executed.
+- Rich mode supports CommonMark and GFM. Use Raw for frontmatter, math, or custom Markdown extensions. Common HTML headings, paragraphs, emphasis, links, and images have a safe, read-only Rich preview; unsupported HTML remains visible as source.
 - Ordinary text, table-cell, and checkbox edits preserve surrounding Markdown. Structural changes can normalize the edited block. If source/meaning preservation fails, saving is blocked and the edit remains available in Raw for review.
 - Rich search matches within a text node. Use Raw for replace, line navigation, or searches across formatting boundaries.
 - Raw and Rich have separate undo histories. Tabs preserve those histories, but switching modes is not a shared undo timeline.

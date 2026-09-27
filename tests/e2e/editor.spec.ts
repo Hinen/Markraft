@@ -2,9 +2,9 @@ import { expect, test, type Page, type Locator } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 const markdown =
   '# 한글 제목\n\nHello **world**.\n\n- [ ] parent\n  - [x] child\n\n| Name | Value |\n| --- | --- |\n| HP | 100 |\n\n![Tracker](https://example.com/tracker.png)\n';
-async function launch(page: Page, text = markdown, name = 'note.md') {
+async function launch(page: Page, text = markdown, name = 'note.md', localImage?: string) {
   await page.addInitScript(
-    ({ text, name }) => {
+    ({ text, name, localImage }) => {
       const doc = {
         path: `/test/${name}`,
         name,
@@ -52,17 +52,68 @@ async function launch(page: Page, text = markdown, name = 'note.md') {
               disk.set(opened.path, opened);
               return [opened];
             }
-            if (command === 'local_image') throw new Error('No fixture');
+            if (command === 'local_image') {
+              if (localImage) return localImage;
+              throw new Error('No fixture');
+            }
             return null;
           },
         },
       });
     },
-    { text, name },
+    { text, name, localImage },
   );
   await page.goto('/');
   await expect(page.locator('.pane-focused .tab.active .tab-name')).toHaveText(name);
 }
+test('README HTML header appears formatted in Rich and keeps its source in Raw', async ({
+  page,
+}) => {
+  const header = readFileSync('README.md', 'utf8').split('\n\n![Rich Markdown')[0];
+  const source = `${header}\n\n## Editing\n\nBody\n`;
+  const icon = `data:image/png;base64,${readFileSync('assets/icon.png').toString('base64')}`;
+  await launch(page, source, 'README.md', icon);
+  const preview = page.locator('.html-preview');
+  await expect(preview.locator('h1')).toHaveText('Markraft');
+  await expect(preview.locator('h1')).toHaveCSS('text-align', 'center');
+  await expect(preview.locator('a[href="#editing"]')).toHaveText('Editing');
+  await expect(preview.locator('img[alt="Markraft icon"]')).toHaveAttribute('width', '72');
+  await expect(preview.locator('img[alt="Markraft icon"]')).toHaveJSProperty('naturalWidth', 128);
+  await expect(page.locator('.ProseMirror')).not.toContainText('<p align="center">');
+  await page.locator('.ProseMirror > p').last().click();
+  await page.keyboard.press('End');
+  await page.keyboard.type(' edit');
+  await page.keyboard.press('ControlOrMeta+s');
+  expect(await page.evaluate(() => (window as any).__testSaved.at(-1).text)).toBe(
+    source.replace('Body\n', 'Body edit\n'),
+  );
+  await page.getByRole('button', { name: 'Raw', exact: true }).click();
+  await expect(page.locator('.cm-content')).toContainText('<h1 align="center">Markraft</h1>');
+});
+test('HTML preview does not execute active tags or fetch remote images automatically', async ({
+  page,
+}) => {
+  let requests = 0;
+  await page.route('https://example.com/html-image.png', async (route) => {
+    requests++;
+    await route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: readFileSync('assets/icon.png'),
+    });
+  });
+  await launch(
+    page,
+    '<p><img src="https://example.com/html-image.png" alt="Remote" onerror="window.bad=1"></p>\n\n' +
+      '<script>window.bad=1</script>\n\n## After\n',
+  );
+  await expect(page.getByText('Remote image blocked · Remote')).toBeVisible();
+  expect(requests).toBe(0);
+  expect(await page.evaluate(() => (window as any).bad)).toBeUndefined();
+  await expect(page.locator('.ProseMirror')).toContainText('<script>window.bad=1</script>');
+  await page.getByRole('button', { name: 'Load once' }).click();
+  await expect.poll(() => requests).toBe(1);
+});
 async function dragTab(page: Page, source: Locator, target: Locator, after = false) {
   const from = (await source.boundingBox())!;
   const to = (await target.boundingBox())!;

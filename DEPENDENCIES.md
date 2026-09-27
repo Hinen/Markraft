@@ -100,6 +100,7 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | devlop | 1.1.0 | MIT |
 | dompurify | 3.4.15 | (MPL-2.0 OR Apache-2.0) |
 | entities | 7.0.1 | BSD-2-Clause |
+| entities | 6.0.1 | BSD-2-Clause |
 | escape-string-regexp | 5.0.0 | MIT |
 | estree-walker | 2.0.2 | MIT |
 | estree-walker | 2.0.2 | MIT |
@@ -154,6 +155,7 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | nanoid | 6.0.1 | MIT |
 | nanoid | 3.3.19 | MIT |
 | orderedmap | 2.1.1 | MIT |
+| parse5 | 7.3.0 | MIT |
 | picocolors | 1.1.1 | ISC |
 | postcss | 8.5.28 | MIT |
 | prosemirror-changeset | 2.4.3 | MIT |
@@ -320,7 +322,6 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | data-urls | 5.0.0 | MIT |
 | decimal.js | 10.6.0 | MIT |
 | electron-to-chromium | 1.5.433 | ISC |
-| entities | 6.0.1 | BSD-2-Clause |
 | es-module-lexer | 2.3.2 | MIT |
 | esbuild | 0.28.2 | MIT |
 | escalade | 3.2.0 | MIT |
@@ -343,7 +344,6 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | node-releases | 2.0.56 | MIT |
 | nwsapi | 2.2.28 | MIT |
 | obug | 2.2.1 | MIT |
-| parse5 | 7.3.0 | MIT |
 | pathe | 2.0.3 | MIT |
 | picomatch | 4.0.7 | MIT |
 | playwright | 1.63.0 | Apache-2.0 |

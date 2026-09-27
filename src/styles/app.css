@@ -559,6 +559,16 @@ kbd {
   border-top: 1px solid var(--line);
   margin: 28px 0;
 }
+.html-preview {
+  white-space: normal;
+}
+.html-preview-block {
+  display: block;
+}
+.html-preview .image-node {
+  background: none;
+  padding: 0;
+}
 .image-node {
   display: inline-flex;
   align-items: center;
