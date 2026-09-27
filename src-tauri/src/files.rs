@@ -83,20 +83,8 @@ pub fn read(path: &Path) -> Result<Document, String> {
     })
 }
 #[tauri::command]
-pub async fn open_dialog(
-    state: tauri::State<'_, FileState>,
-    locale: Option<String>,
-) -> Result<Vec<Document>, String> {
-    let all_files = match locale.as_deref() {
-        Some("ko") => "모든 파일",
-        Some("ja") => "すべてのファイル",
-        _ => "All files",
-    };
-    let Some(files) = rfd::AsyncFileDialog::new()
-        .add_filter(all_files, &["*"])
-        .pick_files()
-        .await
-    else {
+pub async fn open_dialog(state: tauri::State<'_, FileState>) -> Result<Vec<Document>, String> {
+    let Some(files) = rfd::AsyncFileDialog::new().pick_files().await else {
         return Ok(vec![]);
     };
     files
