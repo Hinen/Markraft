@@ -69,7 +69,9 @@ async function launch(page: Page, text = markdown, name = 'note.md', localImage?
 test('README HTML header appears formatted in Rich and keeps its source in Raw', async ({
   page,
 }) => {
-  const header = readFileSync('README.md', 'utf8').split('\n\n![Rich Markdown')[0];
+  const header = readFileSync('README.md', 'utf8')
+    .replace(/\r\n/g, '\n')
+    .split('\n\n![Rich Markdown')[0];
   const source = `${header}\n\n## Editing\n\nBody\n`;
   const icon = `data:image/png;base64,${readFileSync('assets/icon.png').toString('base64')}`;
   await launch(page, source, 'README.md', icon);
