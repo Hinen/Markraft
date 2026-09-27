@@ -3,8 +3,14 @@ import { readFileSync } from 'node:fs';
 import { htmlPreview, type HtmlImage } from '../../src/editors/htmlPreview';
 
 describe('Markdown HTML preview', () => {
-  it('renders the README header formatting and image without changing its source', () => {
-    const source = readFileSync('README.md', 'utf8').split('\n\n![Rich Markdown')[0];
+  it.each([
+    ['LF', '\n'],
+    ['CRLF', '\r\n'],
+  ])('renders the README header formatting and image with %s line endings', (_name, newline) => {
+    const source = readFileSync('README.md', 'utf8')
+      .replace(/\r\n/g, '\n')
+      .replaceAll('\n', newline)
+      .split(/\r?\n\r?\n!\[Rich Markdown/)[0];
     const images: HtmlImage[] = [];
     const preview = htmlPreview(source, (attrs) => {
       images.push(attrs);
