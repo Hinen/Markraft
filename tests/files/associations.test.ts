@@ -26,6 +26,44 @@ it('keeps generated installer lists in sync with supported syntax and plain text
     expect(generated).toContain(`!insertmacro MARKRAFT_REGISTER_EXTENSION "${extension}"`);
     expect(generated).toContain(`!insertmacro MARKRAFT_UNREGISTER_EXTENSION "${extension}"`);
   }
+
+  // macOS uses content types in preference to the extension list. Every
+  // extension must therefore have either a system text type or an imported one.
+  const association = config.bundle.fileAssociations[0];
+  expect(association.rank).toBe('Alternate');
+  expect(association.contentTypes).toContain('public.text');
+  expect(association.contentTypes).toContain('public.mpeg-2-transport-stream');
+  expect(association.contentTypes).toContain('public.avchd-mpeg-2-transport-stream');
+  const importedPlist = readFileSync('src-tauri/Info.plist', 'utf8');
+  for (const extension of extensions) {
+    const identifier = `io.hinen.markraft.imported.${extension}`;
+    if (association.contentTypes.includes(identifier)) {
+      expect(importedPlist).toContain(`<string>${identifier}</string>`);
+      expect(importedPlist).toContain(`<string>${extension}</string>`);
+    } else {
+      expect([
+        'bash',
+        'css',
+        'csv',
+        'diff',
+        'htm',
+        'html',
+        'json',
+        'patch',
+        'py',
+        'sh',
+        'svg',
+        'text',
+        'toml',
+        'tsv',
+        'txt',
+        'xml',
+        'yaml',
+        'yml',
+        'zsh',
+      ]).toContain(extension);
+    }
+  }
 });
 
 it('uses candidate-only Windows hooks rather than default-association macros', () => {

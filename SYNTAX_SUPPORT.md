@@ -63,7 +63,7 @@ provides highlighting, with folding/completion where the underlying language
 package supports them. It does not execute code or provide compiler/type/schema
 checking. CSV/TSV currently have a source editor, not a table preview.
 
-## Windows Open With integration
+## Open With integration
 
 `npm run associations` derives installer extensions from the syntax registry plus
 the small `plainTextExtensions` list in `scripts/file-associations.mjs` (`log`,
@@ -72,7 +72,8 @@ imply special highlighting. Unknown text files can still be opened by browsing
 to Markraft in Windows' app picker or from inside the editor.
 
 Generation runs before `npm run tauri` and during the frontend build. Commit the
-generated `tauri.conf.json` association list and `associations.generated.nsh`;
+generated `tauri.conf.json` association list, `src-tauri/Info.plist`, and
+`associations.generated.nsh`;
 `npm run associations -- --check` detects drift. The Windows config overrides
 Tauri's default association handling with an empty list, so only our NSIS hooks
 register candidates (OpenWithProgids, Applications/SupportedTypes, Capabilities).
@@ -85,3 +86,13 @@ apps' candidates. `scripts/test-file-associations.ps1` executes the real hooks
 under an isolated HKCU prefix to verify registration and cleanup without touching
 the user's real file associations. CI also checks every registered extension
 after installing the full package.
+
+On macOS, Launch Services uses `LSItemContentTypes` instead of the extension
+list when both are present. The generated Tauri association includes `public.text`
+for system text formats such as YAML, plus imported type declarations for formats
+without a system text type. `.ts` and `.mts` also include macOS's video content
+types because the system assigns those types to these ambiguous extensions.
+Markraft registers as an alternate editor and does not change the user's default
+app. CI verifies the types in the built app bundle with
+`scripts/verify-macos-associations.mjs`. Installing the rebuilt app refreshes
+the macOS Open With candidates.

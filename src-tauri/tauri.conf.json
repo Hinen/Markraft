@@ -83,7 +83,42 @@
           "zsh"
         ],
         "name": "Markraft.Document",
-        "role": "Editor"
+        "role": "Editor",
+        "rank": "Alternate",
+        "contentTypes": [
+          "public.text",
+          "public.mpeg-2-transport-stream",
+          "public.avchd-mpeg-2-transport-stream",
+          "io.hinen.markraft.imported.cfg",
+          "io.hinen.markraft.imported.cjs",
+          "io.hinen.markraft.imported.code-workspace",
+          "io.hinen.markraft.imported.conf",
+          "io.hinen.markraft.imported.config",
+          "io.hinen.markraft.imported.cts",
+          "io.hinen.markraft.imported.env",
+          "io.hinen.markraft.imported.ini",
+          "io.hinen.markraft.imported.js",
+          "io.hinen.markraft.imported.jsonc",
+          "io.hinen.markraft.imported.jsx",
+          "io.hinen.markraft.imported.log",
+          "io.hinen.markraft.imported.lst",
+          "io.hinen.markraft.imported.markdown",
+          "io.hinen.markraft.imported.md",
+          "io.hinen.markraft.imported.mjs",
+          "io.hinen.markraft.imported.mts",
+          "io.hinen.markraft.imported.properties",
+          "io.hinen.markraft.imported.ps1",
+          "io.hinen.markraft.imported.psd1",
+          "io.hinen.markraft.imported.psm1",
+          "io.hinen.markraft.imported.pyi",
+          "io.hinen.markraft.imported.pyw",
+          "io.hinen.markraft.imported.sql",
+          "io.hinen.markraft.imported.tab",
+          "io.hinen.markraft.imported.ts",
+          "io.hinen.markraft.imported.tsx",
+          "io.hinen.markraft.imported.xsd",
+          "io.hinen.markraft.imported.xsl"
+        ]
       }
     ],
     "windows": {
