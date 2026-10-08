@@ -80103,7 +80103,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ================================================================================
-dompurify 3.4.15 (npm) — LICENSE
+dompurify 3.4.16 (npm) — LICENSE
 ================================================================================
 
                                  Apache License
@@ -80310,7 +80310,7 @@ dompurify 3.4.15 (npm) — LICENSE
 
 
 ================================================================================
-dompurify 3.4.15 (npm) — LICENSE-MPL
+dompurify 3.4.16 (npm) — LICENSE-MPL
 ================================================================================
 Mozilla Public License Version 2.0
 ==================================
@@ -84769,7 +84769,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 ================================================================================
-source-map-js 1.2.1 (npm) — LICENSE
+source-map-js 1.2.2 (npm) — LICENSE
 ================================================================================
 
 Copyright (c) 2009-2011, Mozilla Foundation and contributors

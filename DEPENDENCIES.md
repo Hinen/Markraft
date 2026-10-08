@@ -98,7 +98,7 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | decode-named-character-reference | 1.3.0 | MIT |
 | dequal | 2.0.3 | MIT |
 | devlop | 1.1.0 | MIT |
-| dompurify | 3.4.15 | (MPL-2.0 OR Apache-2.0) |
+| dompurify | 3.4.16 | (MPL-2.0 OR Apache-2.0) |
 | entities | 7.0.1 | BSD-2-Clause |
 | entities | 6.0.1 | BSD-2-Clause |
 | escape-string-regexp | 5.0.0 | MIT |
@@ -182,7 +182,7 @@ Markraft uses MIT for its own code and preserves upstream dependency licenses. T
 | remark-stringify | 11.0.0 | MIT |
 | rope-sequence | 1.3.4 | MIT |
 | scheduler | 0.28.0 | MIT |
-| source-map-js | 1.2.1 | BSD-3-Clause |
+| source-map-js | 1.2.2 | BSD-3-Clause |
 | style-mod | 4.1.4 | MIT |
 | trough | 2.2.0 | MIT |
 | typescript | 5.9.3 | Apache-2.0 |

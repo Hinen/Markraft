@@ -76,6 +76,18 @@ for build-only data and system runtimes.
 
 ## Maintaining the inventory
 
+### Patch updates for Markraft 0.0.7
+
+Reviewed October 8, 2026: the locked transitive packages DOMPurify 3.4.15 → 3.4.16
+and source-map-js 1.2.1 → 1.2.2 address the published
+[DOMPurify hook advisory](https://github.com/advisories/GHSA-p98j-92pf-mc4p),
+[DOMPurify rawtext advisory](https://github.com/advisories/GHSA-6688-9rhm-gjv2), and
+[source-map-js advisory](https://github.com/advisories/GHSA-68fv-2mgg-jv7q).
+Their license expressions are `(MPL-2.0 OR Apache-2.0)` and `BSD-3-Clause`,
+respectively; the Apache-2.0 alternative is preferred for DOMPurify under the
+existing dependency policy. The inventory and upstream notices were regenerated
+for these versions. `npm audit` reports zero vulnerabilities at review time.
+
 Run `npm ci`, then `npm run licenses` with the locked Cargo dependencies available.
 The generator supports `CARGO`, `CARGO_HOME`, and the default Windows Cargo path.
 It preserves upstream license texts rather than translating or rewriting them.
