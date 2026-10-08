@@ -93,12 +93,12 @@ Menus, dialogs, search controls, tooltips, and application messages change witho
 
 ## Get started
 
-Download **[Markraft 0.0.6](https://github.com/Hinen/Markraft/releases/tag/v0.0.6)**:
+Download **[Markraft 0.0.7](https://github.com/Hinen/Markraft/releases/tag/v0.0.7)**:
 
 | Platform | Download |
 | :--- | :--- |
-| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.6/Markraft_0.0.6_windows_x64_setup.exe) |
-| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.6/Markraft_0.0.6_macos_universal.dmg) |
+| Windows x64 | [Windows installer](https://github.com/Hinen/Markraft/releases/download/v0.0.7/Markraft_0.0.7_windows_x64_setup.exe) |
+| macOS — Apple Silicon & Intel | [Universal DMG](https://github.com/Hinen/Markraft/releases/download/v0.0.7/Markraft_0.0.7_macos_universal.dmg) |
 
 Run the Windows installer, or open the DMG and drag Markraft to Applications. Then open a file with **Ctrl+O**, or drop files into the window. The Windows installer is unsigned; the macOS application is ad-hoc signed and not notarized, so the OS may request approval when opening it.
 
