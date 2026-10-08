@@ -421,6 +421,7 @@ kbd {
   flex: 1;
   overflow: auto;
   min-height: 0;
+  overflow-anchor: none;
 }
 .rich-editor {
   font-family: var(--prose-font);
@@ -665,6 +666,27 @@ kbd {
 }
 .statusbar button {
   padding: 3px;
+}
+.editor-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.editor-zoom-controls button {
+  width: 24px;
+  font-size: 15px;
+  line-height: 1;
+}
+.editor-zoom-controls select {
+  width: 72px;
+  padding: 2px 3px;
+  background: transparent;
+  border-color: transparent;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.editor-zoom-controls select:hover {
+  background: var(--hover);
 }
 .banner {
   display: flex;

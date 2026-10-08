@@ -34,6 +34,13 @@ Write directly in a Markdown document, switch to its source, or keep a configura
 
 All source editors use colors matched to the light or dark theme. Markdown prose and code have separate font settings.
 
+Adjust document zoom with **Ctrl+mouse wheel** over an editor, **Ctrl++ / Ctrl+-**,
+or the **− / percentage / +** controls in the status bar. Click the percentage to
+choose a preset; **Ctrl+0** or **View → Reset zoom** returns to 100% of your configured
+font size. Zoom ranges from 50% to 200%, is shared by all tabs and split panes, and
+is remembered across restarts. Rich mode scales headings, tables and images along
+with the text.
+
 Also available: **TOML, INI, .env, CSV, TSV, HTML, CSS, SQL, JavaScript/JSX,
 TypeScript/TSX, Python, Shell/Bash and PowerShell**. Grammars load on demand.
 Create an extensionless document with **New file** or **+**, then click the syntax
@@ -146,6 +153,8 @@ Use **Command** in place of **Ctrl** on macOS where supported.
 | Request completion in a source editor | `Ctrl+Space` |
 | Select / Accept / Dismiss a completion | `↑` / `↓`, then `Enter` or `Tab`; `Esc` to dismiss |
 | Switch Rich ↔ Raw | `Ctrl+Shift+M` |
+| Zoom in / Zoom out / Reset zoom | `Ctrl++` / `Ctrl+-` / `Ctrl+0` |
+| Zoom with the mouse over an editor | `Ctrl+mouse wheel` |
 | Bold / Italic in Rich | `Ctrl+B` / `Ctrl+I` |
 | Next / Previous tab in a pane | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Move a focused tab | `Alt+Shift+←` / `Alt+Shift+→` |

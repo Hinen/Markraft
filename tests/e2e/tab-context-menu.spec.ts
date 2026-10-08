@@ -29,6 +29,9 @@ async function setup(page: Page, saveMode = 'save') {
     });
   }, saveMode);
   await page.goto('/');
+  await expect(
+    page.locator('.welcome').getByRole('button', { name: 'New file', exact: true }),
+  ).toBeVisible();
   await page.evaluate(async () => {
     const modulePath = '/src/tabs/tabStore.ts';
     const { tabs } = await import(modulePath);

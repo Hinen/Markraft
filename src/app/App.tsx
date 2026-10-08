@@ -8,11 +8,14 @@ import { tabs, useTabs, type EditorTab, type Pane } from '../tabs/tabStore';
 import { TabBars } from '../tabs/TabBars';
 import { PaneDivider } from '../tabs/PaneDivider';
 import { Modal } from './Modal';
+import { EditorZoomControls } from './EditorZoomControls';
+import { adjustEditorZoom, setEditorZoom, useEditorZoomWheel } from './editorZoom';
 import { files, type DocumentFile } from '../files/fileService';
 import { normalize } from '../files/fileTypes';
 import { EditorHost } from '../editors/EditorHost';
 import { editorActions, focusEditor, type EditorAction } from '../editors/editorCommands';
 import { useSettings, setSettings } from '../settings/settingsStore';
+import { MIN_EDITOR_ZOOM, MAX_EDITOR_ZOOM } from '../settings/editorZoom';
 import { useI18n, errorText } from '../i18n/i18n';
 import { version } from '../../package.json';
 import { restoreWorkspace, saveWorkspace, snapshotWorkspace } from '../workspace/workspaceSession';
@@ -41,6 +44,7 @@ export function App() {
   const [menu, setMenu] = useState<string | null>(null);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [workspaceReady, setWorkspaceReady] = useState(false);
+  useEditorZoomWheel(workspaceReady);
   const workspaceReadyRef = useRef(false);
   const splitRatioRef = useRef(splitRatio);
   splitRatioRef.current = splitRatio;
@@ -314,8 +318,9 @@ export function App() {
     return () => media.removeEventListener('change', update);
   }, []);
   useEffect(() => {
-    document.documentElement.dataset.theme =
-      settings.theme === 'system' ? (systemDark ? 'dark' : 'light') : settings.theme;
+    const theme = settings.theme === 'system' ? (systemDark ? 'dark' : 'light') : settings.theme;
+    if (document.documentElement.dataset.theme !== theme)
+      document.documentElement.dataset.theme = theme;
     document.documentElement.style.setProperty('--editor-size', `${settings.fontSize}px`);
     document.documentElement.style.setProperty('--editor-font', settings.editorFont);
     document.documentElement.style.setProperty(
@@ -471,7 +476,9 @@ export function App() {
       if ((event.target as Element)?.closest?.('[role="dialog"], [data-tab-context-menu]')) {
         if (
           (event.ctrlKey || event.metaKey) &&
-          ['n', 'w', 'o', 's', 'm', 'tab', 'pageup', 'pagedown'].includes(event.key.toLowerCase())
+          ['n', 'w', 'o', 's', 'm', 'tab', 'pageup', 'pagedown', '+', '=', '-', '0'].includes(
+            event.key.toLowerCase(),
+          )
         )
           event.preventDefault();
         return;
@@ -485,7 +492,11 @@ export function App() {
         return;
       const handler = handlers.current;
       const tab = getActive();
-      if (key === 'tab' || key === 'pageup' || key === 'pagedown') {
+      if (['+', '=', '-', '0'].includes(key) && !event.altKey) {
+        event.preventDefault();
+        if (key === '0') setEditorZoom(100);
+        else adjustEditorZoom(key === '-' ? -1 : 1);
+      } else if (key === 'tab' || key === 'pageup' || key === 'pagedown') {
         event.preventDefault();
         tabs.cycle(key === 'pageup' || (key === 'tab' && event.shiftKey) ? -1 : 1);
         focusEditor();
@@ -545,6 +556,9 @@ export function App() {
   ];
   const viewMenu: MenuItem[] = [
     ['Rich / Raw', 'Ctrl+Shift+M', toggle, active?.fileType !== 'markdown'],
+    ['Zoom in', 'Ctrl++', () => adjustEditorZoom(1), settings.editorZoom >= MAX_EDITOR_ZOOM],
+    ['Zoom out', 'Ctrl+-', () => adjustEditorZoom(-1), settings.editorZoom <= MIN_EDITOR_ZOOM],
+    ['Reset zoom', 'Ctrl+0', () => setEditorZoom(100)],
     [
       state.split ? 'Merge panes' : 'Split view',
       '',
@@ -885,6 +899,7 @@ export function App() {
               {active.dirty && <span>{t('Modified')}</span>}
             </>
           )}
+          <EditorZoomControls zoom={settings.editorZoom} />
           <button title={t('Editor settings')} onClick={() => setPreferences(true)}>
             ⚙
           </button>

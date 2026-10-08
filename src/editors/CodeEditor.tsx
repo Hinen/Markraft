@@ -43,17 +43,22 @@ export function CodeEditor({
   const completion = useRef(new Compartment());
   const phrases = useRef(new Compartment());
   const previousLocale = useRef(locale);
+  const previousZoom = useRef(settings.editorZoom);
   const themeExtension = () =>
     EditorView.theme(
       {
         '&': {
           height: '100%',
-          fontSize: `${settings.fontSize}px`,
+          fontSize: `${(settings.fontSize * settings.editorZoom) / 100}px`,
           color: 'var(--text)',
           backgroundColor: 'var(--surface)',
         },
-        '.cm-scroller': { fontFamily: settings.editorFont, overflow: 'auto' },
-        '.cm-content': { padding: '24px 0' },
+        '.cm-scroller': {
+          fontFamily: settings.editorFont,
+          overflow: 'auto',
+          overflowAnchor: 'none',
+        },
+        '.cm-content': { padding: `${(24 * settings.editorZoom) / 100}px 0` },
         '.cm-gutters': { backgroundColor: 'var(--surface)', color: 'var(--muted)', border: 'none' },
         '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'var(--hover)' },
         // The drawn selection is behind the content. An opaque current-line
@@ -135,11 +140,20 @@ export function CodeEditor({
   }, [tab.text, visible]);
   useEffect(() => {
     const editor = view.current;
-    if (!editor) return;
+    if (!editor || !visible) return;
     const languageChanged = previousLocale.current !== locale;
     previousLocale.current = locale;
     const searchOpen = languageChanged && searchPanelOpen(editor.state);
     const query = getSearchQuery(editor.state);
+    const zoomChanged = previousZoom.current !== settings.editorZoom;
+    const rect = editor.scrollDOM.getBoundingClientRect();
+    const contentLeft = editor.contentDOM.getBoundingClientRect().left;
+    const anchor =
+      zoomChanged && visible && editor.scrollDOM.scrollTop > 0
+        ? editor.posAtCoords({ x: Math.max(rect.left + 48, contentLeft + 1), y: rect.top + 8 })
+        : null;
+    const coordinates = anchor !== null ? editor.coordsAtPos(anchor) : null;
+    previousZoom.current = settings.editorZoom;
     const focusedElement = document.activeElement as HTMLElement | null;
     if (searchOpen) closeSearchPanel(editor);
     editor.dispatch({
@@ -149,12 +163,25 @@ export function CodeEditor({
         phrases.current.reconfigure(EditorState.phrases.of(editorPhrases())),
       ],
     });
+    // Restore the text anchor after CodeMirror has measured the new font metrics.
+    const zoomFrame =
+      anchor !== null && coordinates
+        ? requestAnimationFrame(() => {
+            editor.dispatch({
+              effects: EditorView.scrollIntoView(anchor, {
+                y: 'start',
+                yMargin: coordinates.top - rect.top,
+              }),
+            });
+          })
+        : 0;
     if (searchOpen) {
       openSearchPanel(editor);
       editor.dispatch({ effects: setSearchQuery.of(query) });
       if (focusedElement?.isConnected) focusedElement.focus();
     }
-  }, [settings, locale]);
+    return () => cancelAnimationFrame(zoomFrame);
+  }, [settings, locale, visible]);
   useEffect(() => {
     const editor = view.current;
     if (!editor) return;
@@ -189,15 +216,16 @@ export function CodeEditor({
     };
   }, [tab.fileType, locale]);
   useEffect(() => {
-    const updateTheme = () =>
-      view.current?.dispatch({ effects: theme.current.reconfigure(themeExtension()) });
+    const updateTheme = () => {
+      if (visible) view.current?.dispatch({ effects: theme.current.reconfigure(themeExtension()) });
+    };
     const observer = new MutationObserver(updateTheme);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
     return () => observer.disconnect();
-  }, [settings]);
+  }, [settings, visible]);
   useEffect(() => {
     if (visible) {
       view.current?.requestMeasure();

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { editorViewCtx, parserCtx, serializerCtx, schemaCtx } from '@milkdown/kit/core';
 import type { Editor } from '@milkdown/kit/core';
 import { history } from '@milkdown/kit/plugin/history';
@@ -18,11 +18,13 @@ import { tabs, type EditorTab } from '../tabs/tabStore';
 import { useI18n, errorText } from '../i18n/i18n';
 export function RichEditor({
   tab,
+  zoom,
   visible,
   focused,
   onError,
 }: {
   tab: EditorTab;
+  zoom: number;
   visible: boolean;
   focused: boolean;
   onError: (error: string) => void;
@@ -39,6 +41,27 @@ export function RichEditor({
   const [search, setSearch] = useState<string | null>(null);
   const [count, setCount] = useState('');
   const searchInput = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    const element = root.current;
+    const scroll = element?.closest<HTMLElement>('.rich-scroll');
+    if (!element || !scroll || !visible) return;
+    const applyZoom = () => {
+      element.style.zoom = String(zoom / 100);
+    };
+    if (!ready || !editor.current || scroll.scrollTop === 0) {
+      applyZoom();
+      return;
+    }
+    editor.current.action((ctx) => {
+      const view = ctx.get(editorViewCtx);
+      const rect = scroll.getBoundingClientRect();
+      const position = view.posAtCoords({ left: rect.left + 48, top: rect.top + 8 });
+      const before = position ? view.coordsAtPos(position.pos).top : null;
+      applyZoom();
+      if (position && before !== null)
+        scroll.scrollTop += view.coordsAtPos(position.pos).top - before;
+    });
+  }, [zoom, ready, visible]);
   useEffect(() => {
     let cancelled = false;
     const instance = markdownEditor(root.current!, tab.text)

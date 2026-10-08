@@ -45,6 +45,7 @@ export function EditorHost({
         <div className="editor-pane" hidden={!rich}>
           <RichEditor
             tab={tab}
+            zoom={settings.editorZoom}
             visible={visible && rich}
             focused={focused && rich}
             onError={onError}
